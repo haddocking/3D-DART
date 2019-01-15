@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<main id="DARTworkflow">
+<meta>
+<name>NAcustombuild.xml</name>
+<datetime>Thu Aug 30 15:25:33 2007</datetime>
+<function>This workflow allows for the custom generation of nucleic acid models starting from a
+ canonical form. The user  is able to introduce a bend in the structure both on a global and  a
+ local scale. Custom values for base-pair and base-pair step parameters are accepted. Models can
+ be generated starting from a sequence or from a user defined 3DNA style base-pair/base-pair step
+ parameter file. After model generation several PDB formatting options can be applied and for
+ HADDOCK users a compatible structure file and accompanied dna-rna_restraints.def file can be
+ generated.</function>
+</meta>
+<plugin id='FileSelector' job='1'> 
+<metadata>
+ <name>Upload your files</name>
+ <input type="Filetype">None</input>
+ <output type="Filetype">self</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">1</option> 
+ <option type="upload" form="file" text="Upload your file">None</option>
+</parameters>
+</plugin>
+<plugin id='BuildNucleicAcids' job='2'> 
+<metadata>
+ <name>Build Nucleic Acid structure from base-pair/base-pair step parameter file</name>
+ <input type="Filetype">.par</input>
+ <output type="Filetype">.pdb</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">1</option>
+ <option type="name" form="text" text="Give your structure a name">dna</option>
+ <option type="sequence" form="text" text="Provide the nucleic acid sequence (5'->3')"></option>  
+ <option type="repeat" form="text" text="Number of repeats">1</option>  
+ <option type="type" form="list" default="BDNA,ADNA,NDB96" text="Nucleic acid type">BDNA</option>
+ <option type="listfiber" form="checkbox" text="Show a list of the 55 fiber models">False</option>
+ <option type="atomic" form="checkbox" text="Full atomic model in PDB format">True</option>
+ <option type="basep" form="checkbox" text="Only base and P atoms in PDB format">False</option>
+ <option type="block1" form="checkbox" text="One block per base-pair/base in ALCHEMY format">False</option>
+ <option type="block2" form="checkbox" text="Two blocks per base-pair in ALCHEMY format">False</option>
+ <option type="negx" form="checkbox" text="reverse the direction of x- and z-axes (for Z-DNA)">False</option>
+</parameters>
+</plugin>
+<plugin id='X3DNAanalyze' job='3'> 
+<metadata>
+ <name>3DNA nucleic acid analysis routines</name>      
+ <input type="filetype">.pdb</input>
+ <output type="filetype">.par,.out,.dat,.aux,.cf7,.helical</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">2</option>
+ <option type="onlyinput" form="checkbox" text="Run only find_pair command, nothing parsed to analyze">False</option>
+ <option type="singlehelix" form="checkbox" text="treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles">False</option>
+ <option type="curvesinput" form="checkbox" text="get Curves input for a duplex">False</option>
+ <option type="helregion" form="checkbox" text="generate a separate output file for each helical region">False</option>
+ <option type="allbasepairs" form="checkbox" text="find all base-pairs and higher base associations">False</option>
+ <option type="deformener" form="checkbox" text="Selecting structures based on base-pair and base-pair step deformation energy">False</option>
+ <option type="multistructure" form="checkbox" text="Perform multistructure analysis">False</option>
+ <option type="master" form="file" text="Provide a master file for multistructure analysis"></option>
+</parameters>
+</plugin>
+<plugin id='ModelNucleicAcids' job='4'> 
+<metadata>
+ <name>Nucleic Acids Modeling Routines</name>    
+ <input type="filetype">.par</input>
+ <output type="filetype">.par</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">3</option>
+ <option type="name" form="text" text="Give your structure a name"></option>
+ <option type="input" form="file" text="Upload base-pair/base-pair step parameter file"></option>
+ <option type="verbose" form="checkbox" text="Verbose output">False</option>
+ <option type="automodel" form="checkbox" text="Automatic modeling">False</option>
+ <option type="gltolerance" form="text" text="Deviation from ensamble average for global conformation, scale 0-1>">1.0</option>
+ <option type="glvariance" form="text" text="Deviation from optimal base-pair(step) parameter for global conformation, scale 0-1>">0.8</option>
+ <option type="glsmoothing" form="text" text="Smoothing for twist, roll and twist. scale 0-1">0.8</option>
+ <option type="lcvariance" form="text" text="Deviation from optimal base-pair(step) parameter for local conformation, scale 0-1>">0.8</option>
+ <option type="global" form="checkbox" text="Introduce a global bend">True</option>
+ <option type="number" form="text" text="Number of models to generate in automatic modeling proces">10</option>
+ <option type="refbp" form="text" text="Base-pair used as origin in global reference frame"></option>
+ <option type="maxangle" form="text" text="Define maximum bend angle"></option>
+ <option type="minangle" form="text" text="Define either the minimum bend angle or give a custom sequence of bend angles"></option>
+ <option type="anglerange" form="text" text="Define bend angle range (as in 1-5)"></option>
+ <option type="anglestep" form="text" text="Define bend-angle step size">1</option>
+ <option type="startbp" form="text" text="Define start base-pair for bending"></option>
+ <option type="endbp" form="text" text="Define end base-pair for bending"></option>
+ <option type="minorient" form="text" text="Define either the minimum bend angle in space or give a custom sequence"></option>
+ <option type="maxorient" form="text" text="Define a maximum angle of bend in space"></option>
+ <option type="orientrange" form="text" text="Define bend angle orientation range (as in 90-180)"></option>
+ <option type="orientstep" form="text" text="Define step size of bend angle in space">5</option>
+ <option type="bpstep" form="text" text="Supply custom values for base-pair step parameters as a komma seperated list"></option>
+ <option type="bp" form="text" text="Supply custom values for base-pair parameters as a komma seperated list"></option>
+ <option type="mingroove" form="text" text="Define minimum major groove width"></option>
+ <option type="maxgroove" form="text" text="Define minimum minor groove width"></option>
+ <option type="groovestep" form="text" text="Define major groove width step size"></option>
+ <option type="groovestart" form="text" text="Define start base-pair for major groove width change"></option>
+ <option type="grooveend" form="text" text="Define end base-pair for major groove width change"></option>
+ <option type="helicalphase" form="text" text="Set the DNA helical phasing (bp/turn)"></option>
+</parameters>
+</plugin>
+<plugin id='BuildNucleicAcids' job='5'> 
+<metadata>
+ <name>Build Nucleic Acid structure from base-pair/base-pair step parameter file</name>
+ <input type="Filetype">.par</input>
+ <output type="Filetype">.pdb</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">4</option>
+ <option type="name" form="text" text="Give your structure a name"></option>
+ <option type="sequence" form="text" text="Provide the nucleic acid sequence (5'->3')"></option>  
+ <option type="repeat" form="text" text="Number of repeats">1</option>  
+ <option type="type" form="list" default="BDNA,ADNA,NDB96" text="Nucleic acid type">BDNA</option>
+ <option type="listfiber" form="checkbox" text="Show a list of the 55 fiber models">False</option>
+ <option type="atomic" form="checkbox" text="Full atomic model in PDB format">True</option>
+ <option type="basep" form="checkbox" text="Only base and P atoms in PDB format">False</option>
+ <option type="block1" form="checkbox" text="One block per base-pair/base in ALCHEMY format">False</option>
+ <option type="block2" form="checkbox" text="Two blocks per base-pair in ALCHEMY format">False</option>
+ <option type="negx" form="checkbox" text="reverse the direction of x- and z-axes (for Z-DNA)">False</option>
+</parameters>
+</plugin>
+<plugin id='X3DNAanalyze' job='6'> 
+<metadata>
+ <name>3DNA nucleic acid analysis routines</name>
+ <input type="filetype">.pdb</input>
+ <output type="filetype">.par,.out,.dat,.aux,.cf7,.helical</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">5</option>
+ <option type="onlyinput" form="checkbox" text="Run only find_pair command, nothing parsed to analyze">False</option>
+ <option type="singlehelix" form="checkbox" text="treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles">False</option>
+ <option type="curvesinput" form="checkbox" text="get Curves input for a duplex">False</option>
+ <option type="helregion" form="checkbox" text="generate a separate output file for each helical region">False</option>
+ <option type="allbasepairs" form="checkbox" text="find all base-pairs and higher base associations">False</option>
+ <option type="deformener" form="checkbox" text="Selecting structures based on base-pair and base-pair step deformation energy">False</option>
+ <option type="multistructure" form="checkbox" text="Perform multistructure analysis">False</option>
+ <option type="master" form="file" text="Provide a master file for multistructure analysis"></option>
+</parameters>
+</plugin>
+<plugin id='NABendAnalyze' job='7'> 
+<metadata>
+ <name>Nucleic Acid global bend analysis</name>
+ <input type="filetype">.par</input>
+ <output type="filetype">.bend</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">6</option>
+ <option type="refbp" form="text" text="Define base-pair used as global origin"></option>
+ <option type="zone" form="text" text="Define zone over which to calculate"></option>
+ <option type="multiana" form="checkbox" text="Perform multibend analysis">False</option>
+ <option type="verbose" form="checkbox" text="Verbose output">False</option>
+</parameters>
+</plugin>
+<plugin id='PDBeditor' job='8'> 
+<metadata>
+ <name>PDB formating options</name>
+ <input type="Filetype">.pdb</input>
+ <output type="Filetype">_fixed.pdb</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">True</option>
+ <option type="inputfrom" form="hidden" text="None">5</option>
+ <option type="NA1to3" form="checkbox" text="Convert nucleic acid 1 letter to 3 letter notation">False</option>
+ <option type="NA3to1" form="checkbox" text="Convert nucleic acid 3 letter to 1 letter notation">False</option> 
+ <option type="setchainID" form="text" text="Set PDB chain id"></option>
+ <option type="IUPACtoCNS" form="checkbox" text="Convert IUPAC to CNS notation">False</option>
+ <option type="reres" form="text" text="Renumber residues starting from"></option>
+ <option type="reatom" form="text" text="Renumber atoms starting from"></option>
+ <option type="xsegchain" form="checkbox" text="Move chain id to segment id">False</option>
+ <option type="noheader" form="checkbox" text="PDB without header lines">False</option>
+ <option type="nohetatm" form="checkbox" text="PDB without HETATM records">False</option>
+ <option type="nofooter" form="checkbox" text="PDB without footer lines">False</option>
+ <option type="pdb2haddock" form="checkbox" text="Make PDB HADDOCK ready">False</option>
+ <option type="joinpdb" form="checkbox" text="Join PDB files to one">False</option>
+ <option type="splitpdb" form="text" text="Split PDB files based on TER or MODEL statement"></option>
+ <option type="name" form="text" text="Give your structure a name"></option>
+ <option type="pdb2xml" form="checkbox" text="Convert PDB to DART XML representation">False</option>
+</parameters>
+</plugin>
+<plugin id='NArestraint' job='9'> 
+<metadata>
+ <name>dna-rna_rstraints.def file generator</name>
+ <input type="filetype">.pdb</input>
+ <output type="filetype">dna-rna_restraints.def</output>
+</metadata>
+<parameters>
+ <option type="useplugin" form="hidden" text="None">False</option>
+ <option type="inputfrom" form="hidden" text="None">8</option>
+ <option type="verbose" form="checkbox" text="Verbose output">False</option>
+ <option type="bpplan" form="checkbox" text="Restrain base-pair planarity">False</option>
+ <option type="bplan" form="checkbox" text="Restrain base planarity">True</option>
+ <option type="c1pick" form="checkbox" text="Restrain C1'-C1' virtual bond distance">False</option>
+ <option type="c1lower" form="text" text="C1'-restraint lower distance limit">0.05</option>
+ <option type="c1upper" form="text" text="C1'-restraint upper distance limit">0.05</option>
+ <option type="pickwc" form="checkbox" text="Restrain Watson-Crick hydrogen bond length">True</option>
+ <option type="wc_up" form="text" text="WC-restraint upper distance limit">0.05</option>
+ <option type="wc_low" form="text" text="WC-restraint lower distance limit">0.05</option>
+ <option type="wc_uri_up" form="text" text="WC-restraint (uracil) upper distance limit">0.01</option>
+ <option type="wc_uri_low" form="text" text="WC-restraint (uracil) lower distance limit">0.01</option>
+ <option type="pickpuck" form="checkbox" text="Restrain sugar pucker dihedrals of input structure">False</option>
+ <option type="pickbackdih" form="checkbox" text="Restrain phosphate backbone dihedrals of input structure">False</option>
+ <option type="pform_1" form="list" default="b-form,a-form,other" text="Conformation of group 1">b-form</option>
+ <option type="puck_1_start" form="text" text="Start residue"></option>
+ <option type="puck_1_end" form="text" text="End residue"></option>
+ <option type="puck_1_nu2" form="text" text="dihedral C1'-C2'-C3'-C4'">-34.9</option>
+ <option type="puck_1_nu2err" form="text" text="dihedral C1'-C2'-C3'-C4' error">0.0</option>
+ <option type="puck_1_nu3" form="text" text="dihedral C5'-C4'-C3'-C2'">-86.4</option>
+ <option type="puck_1_nu3err" form="text" text="dihedral C5'-C4'-C3'-C2' error">0.0</option>
+ <option type="puck_1_nu4" form="text" text="dihedral C1'-O4'-C4'-C5'">106.4</option>
+ <option type="puck_1_nu4err" form="text" text="dihedral C1'-O4'-C4'-C5' error">0.0</option>
+ <option type="pform_2" form="list" default="b-form,a-form,other" text="Conformation of group 2">b-form</option>
+ <option type="puck_2_start" form="text" text="Start residue"></option>
+ <option type="puck_2_end" form="text" text="End residue"></option>
+ <option type="puck_2_nu2" form="text" text="dihedral C1'-C2'-C3'-C4'">-34.9</option>
+ <option type="puck_2_nu2err" form="text" text="dihedral C1'-C2'-C3'-C4' error">0.0</option>
+ <option type="puck_2_nu3" form="text" text="dihedral C5'-C4'-C3'-C2'">-86.4</option>
+ <option type="puck_2_nu3err" form="text" text="dihedral C5'-C4'-C3'-C2' error">0.0</option>
+ <option type="puck_2_nu4" form="text" text="dihedral C1'-O4'-C4'-C5'">106.4</option>
+ <option type="puck_2_nu4err" form="text" text="dihedral C1'-O4'-C4'-C5' error">0.0</option>
+ <option type="pform_3" form="list" default="b-form,a-form,other" text="Conformation of group 3">b-form</option>
+ <option type="puck_3_start" form="text" text="Start residue"></option>
+ <option type="puck_3_end" form="text" text="End residue"></option>
+ <option type="puck_3_nu2" form="text" text="dihedral C1'-C2'-C3'-C4'">-34.9</option>
+ <option type="puck_3_nu2err" form="text" text="dihedral C1'-C2'-C3'-C4' error">0.0</option>
+ <option type="puck_3_nu3" form="text" text="dihedral C5'-C4'-C3'-C2'">-86.4</option>
+ <option type="puck_3_nu3err" form="text" text="dihedral C5'-C4'-C3'-C2' error">0.0</option>
+ <option type="puck_3_nu4" form="text" text="dihedral C1'-O4'-C4'-C5'">106.4</option>
+ <option type="puck_3_nu4err" form="text" text="dihedral C1'-O4'-C4'-C5' error">0.0</option>
+ <option type="dform_1" form="list" default="b-form,a-form,other" text="Conformation of group 1">b-form</option>
+ <option type="dih_1_start" form="text" text="Start residue"></option>
+ <option type="dih_1_end" form="text" text="End residue"></option>
+ <option type="dih_1_alpha" form="text" text="alpha dihedral O3'-P-O5'-C5'">-10.0</option>
+ <option type="dih_1_alphaerr" form="text" text="alpha dihedral O3'-P-O5'-C5' error">10.0</option>
+ <option type="dih_1_beta" form="text" text="beta dihedral P-O5'-C5'-C4'">136.4</option>
+ <option type="dih_1_betaerr" form="text" text="beta dihedral P-O5'-C5'-C4' error">40.0</option>
+ <option type="dih_1_gamma" form="text" text="gamma dihedral O5'-C5'-C4'-C3'">31.1</option>
+ <option type="dih_1_gammaerr" form="text" text="gamma dihedral O5'-C5'-C4'-C3' error">20.0</option>
+ <option type="dih_1_delta" form="text" text="delta dihedral C5'-C4'-C3'-O3'">-165.0</option>
+ <option type="dih_1_deltaerr" form="text" text="delta dihedral C5'-C4'-C3'-O3' error">50.0</option>
+ <option type="dih_1_eps" form="text" text="epsilon dihedral C4'-C3'-O3'-P">-165.0</option>
+ <option type="dih_1_epserr" form="text" text="epsilon dihedral C4'-C3'-O3'-P error">10.0</option>
+ <option type="dih_1_zeta" form="text" text="zeta dihedral C3'-O3'-P-O5'">-150.8</option>
+ <option type="dih_1_zetaerr" form="text" text="zeta dihedral C3'-O3'-P-O5' error">50.0</option>
+ <option type="dform_2" form="list" default="b-form,a-form,other" text="Conformation of group 2">b-form</option>
+ <option type="dih_2_start" form="text" text="Start residue"></option>
+ <option type="dih_2_end" form="text" text="End residue"></option>
+ <option type="dih_2_alpha" form="text" text="alpha dihedral O3'-P-O5'-C5'">-10.0</option>
+ <option type="dih_2_alphaerr" form="text" text="alpha dihedral O3'-P-O5'-C5' error">10.0</option>
+ <option type="dih_2_beta" form="text" text="beta dihedral P-O5'-C5'-C4'">136.4</option>
+ <option type="dih_2_betaerr" form="text" text="beta dihedral P-O5'-C5'-C4' error">40.0</option>
+ <option type="dih_2_gamma" form="text" text="gamma dihedral O5'-C5'-C4'-C3'">31.1</option>
+ <option type="dih_2_gammaerr" form="text" text="gamma dihedral O5'-C5'-C4'-C3' error">20.0</option>
+ <option type="dih_2_delta" form="text" text="delta dihedral C5'-C4'-C3'-O3'">-165.0</option>
+ <option type="dih_2_deltaerr" form="text" text="delta dihedral C5'-C4'-C3'-O3' error">50.0</option>
+ <option type="dih_2_eps" form="text" text="epsilon dihedral C4'-C3'-O3'-P">-165.0</option>
+ <option type="dih_2_epserr" form="text" text="epsilon dihedral C4'-C3'-O3'-P error">10.0</option>
+ <option type="dih_2_zeta" form="text" text="zeta dihedral C3'-O3'-P-O5'">-150.8</option>
+ <option type="dih_2_zetaerr" form="text" text="zeta dihedral C3'-O3'-P-O5' error">50.0</option>
+ <option type="dform_3" form="list" default="b-form,a-form,other" text="Conformation of group 3">b-form</option>
+ <option type="dih_3_start" form="text" text="Start residue"></option>
+ <option type="dih_3_end" form="text" text="End residue"></option>
+ <option type="dih_3_alpha" form="text" text="alpha dihedral O3'-P-O5'-C5'">-10.0</option>
+ <option type="dih_3_alphaerr" form="text" text="alpha dihedral O3'-P-O5'-C5' error">10.0</option>
+ <option type="dih_3_beta" form="text" text="beta dihedral P-O5'-C5'-C4'">136.4</option>
+ <option type="dih_3_betaerr" form="text" text="beta dihedral P-O5'-C5'-C4' error">40.0</option>
+ <option type="dih_3_gamma" form="text" text="gamma dihedral O5'-C5'-C4'-C3'">31.1</option>
+ <option type="dih_3_gammaerr" form="text" text="gamma dihedral O5'-C5'-C4'-C3' error">20.0</option>
+ <option type="dih_3_delta" form="text" text="delta dihedral C5'-C4'-C3'-O3'">-165.0</option>
+ <option type="dih_3_deltaerr" form="text" text="delta dihedral C5'-C4'-C3'-O3' error">50.0</option>
+ <option type="dih_3_eps" form="text" text="epsilon dihedral C4'-C3'-O3'-P">-165.0</option>
+ <option type="dih_3_epserr" form="text" text="epsilon dihedral C4'-C3'-O3'-P error">10.0</option>
+ <option type="dih_3_zeta" form="text" text="zeta dihedral C3'-O3'-P-O5'">-150.8</option>
+ <option type="dih_3_zetaerr" form="text" text="zeta dihedral C3'-O3'-P-O5' error">50.0</option>
+</parameters>
+</plugin>
+</main>

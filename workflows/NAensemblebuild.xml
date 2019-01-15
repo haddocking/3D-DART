@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<main id="DARTworkflow">
+<meta>
+<name>NAensemblebuild.xml</name>
+<datetime>Wed Aug 29 10:17:53 2007</datetime>
+<function>DART workflow sequence for the automatic nucleic acid library generation
+in a protein-nucleic acid HADDOCKing run</function>
+</meta>
+<plugin id='FileSelector' job='1'> 
+<metadata>
+<name>Upload your files</name>
+<function>This is a general plugin used to select files</function>
+<input type="Filetype">None</input>
+<output type="Filetype">self</output>
+</metadata>
+<parameters>
+<option type="inputfrom" form="hidden" text="None">1.0</option> 
+<option type="upload" form="file" text="Upload your file">None</option>
+<option type="useplugin" form="hidden">True</option>
+</parameters>
+</plugin>
+<plugin id='PDBeditor' job='2'> 
+<metadata>
+<name>PDB formating options</name>
+<function>A suite of functions to modify PDB files. Feutures include:
+change nucleic acid nomenclature from a 1-letter to a 3-letter code 
+and vice versa; set chain-ID; renumber residues and/or atom numbering; 
+check if PDB is valid for HADDOCK (TER statement, END statement, 
+CNS nomenclature); place chain ID to location of seg ID; split ensemble 
+files or concate PDB files to an ensemble; convert PDB to an XML 
+representation.</function>
+<input type="Filetype">.pdb</input>
+<output type="Filetype">.pdb</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">1</option>
+<option type="NA1to3" form="checkbox" text="Convert nucleic acid 1 letter to 3 letter notation">False</option>
+<option type="NA3to1" form="checkbox" text="Convert nucleic acid 3 letter to 1 letter notation">False</option> 
+<option type="setchainID" form="text" text="Set PDB chain id"></option>
+<option type="IUPACtoCNS" form="checkbox" text="Convert IUPAC to CNS notation">False</option>
+<option type="reres" form="text" text="Renumber residues starting from"></option>
+<option type="reatom" form="text" text="Renumber atoms starting from"></option>
+<option type="xsegchain" form="checkbox" text="Move chain id to segment id">False</option>
+<option type="noheader" form="checkbox" text="PDB without header lines">False</option>
+<option type="nohetatm" form="checkbox" text="PDB without HETATM records">False</option>
+<option type="nofooter" form="checkbox" text="PDB without footer lines">False</option>
+<option type="pdb2haddock" form="checkbox" text="Make PDB HADDOCK ready">False</option>
+<option type="joinpdb" form="checkbox" text="Join PDB files to one">False</option>
+<option type="splitpdb" form="checkbox" text="Split PDB files based on TER or MODEL statement"></option>
+<option type="name" form="text" text="Give your structure a name"></option>
+<option type="pdb2xml" form="checkbox" text="Convert PDB to DART XML representation">False</option>
+</parameters>
+</plugin>
+<plugin id='NABendAnalyze' job='4'> 
+<metadata>
+<name>Nucleic Acid global bend analysis</name>
+<function>This plugin calculates the global bend angle of nucleic-acid
+structures. Calculation relies on the twist, roll and tilt values extracted 
+from the .par files of a 3DNA analysis run. You can define the zone over 
+which to calculate the bend and/or the reference base-pair to be used.</function>
+<input type="filetype">.out</input>
+<output type="filetype">.bend,multibend.stat</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">3</option>
+<option type="refbp" form="text" text="Define base-pair used as global origin"></option>
+<option type="zone" form="text" text="Define zone over which to calculate"></option>
+<option type="multiana" form="checkbox" text="Perform multibend analysis">True</option>
+<option type="verbose" form="checkbox" text="Verbose output">False</option>
+</parameters>
+</plugin>
+<plugin id='X3DNAanalyze' job='3'> 
+<metadata>
+<name>3DNA nucleic acid analysis routines</name>	
+<function>This plugin handels all 3DNA analysis routines. It requiers 3DNA to be 
+present in the main /DART/third-party/ directory. The plugin takes PDB files as 
+input.PDB files may contain only nucleic acids or mixed systems. The plugin 
+generates either the input for the 'analyze' routine of 3DNA or runs the complete 
+analysis route generating various output files. To compare structures a 
+multistructure analysis routine is implemented. This routine	gathers various 
+parameters from the output file and base-pai/baise-pair step parameter files of 
+all individual structures and calculateds statistical meaningfull data. This 
+multistructure analysis routine can also be run without running the 3DNA analysis 
+routines by either supplying the program with 3DNA .out files or a 
+list file containing the names of the input files.</function>		       
+<input type="filetype">.pdb</input>
+<output type="filetype">.par,.out,.dat,.aux,.cf7,.helical,.list,.curves,multiout.stat,napairing.stat</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">2</option>
+<option type="onlyinput" form="checkbox" text="Run only find_pair command, nothing parsed to analyze">False</option>
+<option type="singlehelix" form="checkbox" text="treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles">False</option>
+<option type="curvesinput" form="checkbox" text="get Curves input for a duplex">False</option>
+<option type="helregion" form="checkbox" text="generate a separate output file for each helical region">False</option>
+<option type="allbasepairs" form="checkbox" text="find all base-pairs and higher base associations">False</option>
+<option type="deformener" form="checkbox" text="Selecting structures based on base-pair and base-pair step deformation energy">False</option>
+<option type="multistructure" form="checkbox" text="Perform multistructure analysis">True</option>
+<option type="master" form="file" text="Provide a master file for multistructure analysis"></option>
+</parameters>
+</plugin>
+<plugin id='BuildNucleicAcids' job='6'> 
+<metadata>
+<name>Build Nucleic Acid structure from base-pair/base-pair step parameter file</name>
+<function>Build a nucleic acid structure of a user defined type and sequence (uses 
+the "fiber" module of 3DNA) or rebuild a nucleic acid structure from a base-pair
+(step) parameter file in various modes (uses the "rebuild" module of 3DNA).</function>
+<input type="Filetype">.par</input>
+<output type="Filetype">.pdb</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">5</option>
+<option type="name" form="text" text="Give your structure a name"></option>
+<option type="sequence" form="text" text="Provide the nucleic acid sequence (5'->3')"></option>  
+<option type="repeat" form="text" text="Number of repeats">1</option>  
+<option type="type" form="list" default="BDNA,ADNA,NDB96" text="Nucleic acid type">BDNA</option>
+<option type="listfiber" form="checkbox" text="Show a list of the 55 fiber models">False</option>
+<option type="atomic" form="checkbox" text="Full atomic model in PDB format">True</option>
+<option type="basep" form="checkbox" text="Only base and P atoms in PDB format">False</option>
+<option type="block1" form="checkbox" text="One block per base-pair/base in ALCHEMY format">False</option>
+<option type="block2" form="checkbox" text="Two blocks per base-pair in ALCHEMY format">False</option>
+<option type="negx" form="checkbox" text="reverse the direction of x- and z-axes (for Z-DNA)">False</option>
+</parameters>
+</plugin>
+<plugin id='ModelNucleicAcids' job='5'> 
+<metadata>
+<name>Nucleic Acids Modeling Routines</name>
+<function>This plugin allows you to model Nucleic Acids by introduce local and global 
+conformational changes. Modelling is accomplished by manipulation of the 12 base-pair 
+and base-pair step parameters. To use this plugin you need to have a base-pair/base-pair 
+step parameter file. The global conformational changes you can introduce cover nucleic 
+acid bending and twisting and control over the direction of the bend in space.</function>		       
+<input type="filetype">.par,multibend.stat,multiout.stat,napairing.stat</input>
+<output type="filetype">.par</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">3,4</option>
+<option type="name" form="text" text="Give your structure a name">CROlib</option>
+<option type="input" form="file" text="Upload base-pair/base-pair step parameter file"></option>
+<option type="verbose" form="checkbox" text="Verbose output">False</option>
+<option type="automodel" form="checkbox" text="Automatic modeling">True</option>
+<option type="gltolerance" form="text" text="Deviation from ensamble average for global conformation, scale 0-1>">10.0</option>
+<option type="glvariance" form="text" text="Deviation from optimal base-pair(step) parameter for global conformation, scale 0-1>">0.0</option>
+<option type="glsmoothing" form="text" text="Smoothing for twist, roll and twist. scale 0-1">0.8</option>
+<option type="lcvariance" form="text" text="Deviation from optimal base-pair(step) parameter for local conformation, scale 0-1>">0.8</option>
+<option type="number" form="text" text="Number of models to generate">20</option>
+<option type="refbp" form="text" text="Base-pair used as origin in global reference frame"></option>
+<option type="maxangle" form="text" text="Define maximum bend angle"></option>
+<option type="minangle" form="text" text="Define either the minimum bend angle or give a custom sequence of bend angles"></option>
+<option type="anglestep" form="text" text="Define bend-angle step size">1</option>
+<option type="startbp" form="text" text="Define start base-pair for bending"></option>
+<option type="endbp" form="text" text="Define end base-pair for bending"></option>
+<option type="minorient" form="text" text="Define either the minimum bend angle in space or give a custom sequence">260</option>
+<option type="maxorient" form="text" text="Define a maximum angle of bend in space">280</option>
+<option type="orientstep" form="text" text="Define step size of bend angle in space">5</option>
+<option type="bpstep" form="text" text="Supply custom values for base-pair step parameters as a komma seperated list. Set all six parameters"></option>
+<option type="bp" form="text" text="Supply custom values for base-pair parameters as a komma seperated list. Set all six parameters"></option>
+<option type="mingroove" form="text" text="Define minimum major groove width"></option>
+<option type="maxgroove" form="text" text="Define minimum minor groove width"></option>
+<option type="groovestep" form="text" text="Define major groove width step size"></option>
+<option type="groovestart" form="text" text="Define start base-pair for major groove width change"></option>
+<option type="grooveend" form="text" text="Define end base-pair for major groove width change"></option>
+<option type="helicalphase" form="text" text="Set the DNA helical phasing (bp/turn)"></option>
+</parameters>
+</plugin>
+<plugin id='PDBeditor' job='7'> 
+<metadata>
+<name>PDB formating options</name>
+<function>A suite of functions to modify PDB files. Feutures include:
+change nucleic acid nomenclature from a 1-letter to a 3-letter code 
+and vice versa; set chain-ID; renumber residues and/or atom numbering; 
+check if PDB is valid for HADDOCK (TER statement, END statement, 
+CNS nomenclature); place chain ID to location of seg ID; split ensemble 
+files or concate PDB files to an ensemble; convert PDB to an XML 
+representation.</function>
+<input type="Filetype">.pdb</input>
+<output type="Filetype">.pdb</output>
+</metadata>
+<parameters>
+<option type="useplugin" form="hidden">True</option>
+<option type="inputfrom" form="hidden" text="None">6</option>
+<option type="NA1to3" form="checkbox" text="Convert nucleic acid 1 letter to 3 letter notation">False</option>
+<option type="NA3to1" form="checkbox" text="Convert nucleic acid 3 letter to 1 letter notation">False</option> 
+<option type="setchainID" form="text" text="Set PDB chain id"></option>
+<option type="IUPACtoCNS" form="checkbox" text="Convert IUPAC to CNS notation">False</option>
+<option type="reres" form="text" text="Renumber residues starting from"></option>
+<option type="reatom" form="text" text="Renumber atoms starting from"></option>
+<option type="xsegchain" form="checkbox" text="Move chain id to segment id">False</option>
+<option type="noheader" form="checkbox" text="PDB without header lines">False</option>
+<option type="nohetatm" form="checkbox" text="PDB without HETATM records">False</option>
+<option type="nofooter" form="checkbox" text="PDB without footer lines">False</option>
+<option type="pdb2haddock" form="checkbox" text="Make PDB HADDOCK ready">True</option>
+<option type="joinpdb" form="checkbox" text="Join PDB files to one">False</option>
+<option type="splitpdb" form="text" text="Split PDB files based on TER or MODEL statement"></option>
+<option type="name" form="text" text="Give your structure a name"></option>
+<option type="pdb2xml" form="checkbox" text="Convert PDB to DART XML representation">False</option>
+</parameters>
+</plugin>
+</main>
