@@ -15,7 +15,7 @@ from dart.system import FrameWork
 # Logging
 import logging
 logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
-log = logging.getLogger("3d_dart")
+log = logging.getLogger("3D-DART")
 
 
 # Set environment

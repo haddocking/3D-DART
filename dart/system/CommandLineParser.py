@@ -39,7 +39,7 @@ Module depenencies: Python 3.x, NumPy
 # Logging
 import logging
 logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
-log = logging.getLogger("3d_dart")
+log = logging.getLogger("3D-DART")
 
 
 class CommandLineOptionParser:
@@ -63,38 +63,9 @@ class CommandLineOptionParser:
 		
 		#self.WorkflowXML()
 		#self.MakeWebForm()
-	
-	def _test_plugin_import(self, plugin):
-		"""Try to import the key components of the plugin. This is only
-		   for testing the validity of the plugin. Modules do not stay
-		   registered."""
-		
-		print("    * Try importing plugin:", plugin)
-	
-		try:
-			exec("from plugins import "+plugin)
-			print("      - Plugin imported")
-		except:
-			print("      - ERROR: Could not import", plugin)
-			sys.exit(0)
-
-		try:
-			exec("from plugins."+plugin+" import PluginXML")
-			print("      - Plugin XML file present")
-		except:
-			print("      - ERROR: Plugin has no XML data file, this is not valid")
-			sys.exit(0)
-		try:
-			exec("from plugins."+plugin+" import PluginCore as PluginCore")
-			print("      - Plugin Core present")
-		except:
-			print("      - ERROR: Plugin has no Core module")
-			sys.exit(0)
 		
 	def parse_command_line(self):
 		"""Parsing command line arguments"""
-		log.info("Parsing command-line arguments:")
-
 		parser = argparse.ArgumentParser()
 
 		parser.add_argument( "-l", "--list", action="store_true", dest="plugin_list", default=False, help="List available plugins and workflows")
@@ -110,7 +81,7 @@ class CommandLineOptionParser:
 		if not len(sys.argv) > 1:
 			parser.print_help(sys.stderr)
 			log.error("Wrong number of arguments")
-			raise SystemExit()
+			raise SystemExit
 
 		self.option_dict = {}
 		self.option_dict['workflow'] = args.workflow
@@ -119,16 +90,21 @@ class CommandLineOptionParser:
 		self.option_dict['dry'] = args.dry
 		self.option_dict['server'] = args.server
 
+		# List of available plugins
+		if args.plugin_list:
+			self.get_plugin_list()
+			raise SystemExit
+
 		# Get full path for any file provided
 		if args.filenames:
 			self.option_dict['input'] = [os.path.abspath(file) for file in args.filenames]
 			for file in self.option_dict['input']:
 				if not os.path.exists(file):
 					log.error("Provided file {} does not exist".format(file))
-					raise SystemExit()
+					raise SystemExit
 	
 		if self.option_dict['workflow']:
-			log.info("    * The following 3D-DART batch configuration file will be executed:", self.option_dict['workflow'])
+			log.info("    * The following 3D-DART batch configuration file will be executed: {}".format(self.option_dict['workflow']))
 		
 		if self.option_dict['pluginseq']:
 			log.info("    * The following command line plugin sequence will be excecuted:")
@@ -143,7 +119,7 @@ class CommandLineOptionParser:
 	def get_plugin_list(self):
 		"""List all available plugins in plugin directory and all workflows in workflow directory"""
 		log.info("List of available plugins. Execute plugin with option -h/--help for more information")
-		log.info("    about the function of the plugin")
+		log.info("    about the function of the plugin:")
 		plugindir = os.path.join(self.darth_path, 'plugins')
 		os.chdir(plugindir)
 		plugins = glob.glob('*.py')
@@ -158,8 +134,7 @@ class CommandLineOptionParser:
 		workflows = glob.glob('*.xml')
 		for workflow in glob.glob('*.xml'):
 			basename, extension = os.path.splitext(workflow)
-			print("    * {}".format(basename))
-		raise SystemExit()
+			log.info("    * {}".format(basename))
 				
 	def WorkflowXML(self):
 		
