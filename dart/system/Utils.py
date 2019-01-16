@@ -1,22 +1,9 @@
 #!/usr/bin/env python3
 
-"""
-==========================================================================================
-
-Author:			    Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center for 
-			        Biomolecular Research, Utrecht university, The Netherlands.
-Copyright (C):		2006 (DART project)
-DART version:		1.2 (25-11-2008)
-
-Diverse but usefull functions
-==========================================================================================
-"""
-
-"""Import modules"""
 import os
 
-def MakeBackup(infile,report=False):
-	
+
+def make_backup(infile, report=False):
 	"""Make backup of files or directories by checking if file (or backup as _*) is there and rename"""
 	
 	if os.path.isfile(infile) or os.path.isdir(infile):
@@ -31,45 +18,41 @@ def MakeBackup(infile,report=False):
 	if report == True:
 		return infile
 
-def FileRootRename(infile,extension,basename):
 
-	"""Rename a file but preserve extension"""
+def file_root_rename(infile, extension, basename):
+	"""Renames a file but preserves the extension"""
+	outfile = basename + extension
+	os.rename(infile, outfile)	
 
-	outfile = basename+extension
-	os.rename(infile,outfile)	
 
-def TransformDash(n):
-	
-	"""Transform dashes often found in 3DNA tables to floats"""
-	
+def transform_dash(n):
+	"""Transforms dashes often found in 3DNA tables to floats"""
 	if n == '---' or n == '----':
 		return float(0)
 	else:
 		return float(n)
 
 
-def RenameFilepath(inputfile,path=None,basename=None,extension=None):
-
-	"""Rename a filepath in several ways: path, basename and/or extension"""
-	
-	orpath = os.path.dirname(inputfile)
-	orbasename = os.path.splitext(os.path.basename(inputfile))[0] 
-	orextension = os.path.splitext(os.path.basename(inputfile))[1] 
+def rename_file_path(input_file, path=None, basename=None, extension=None):
+	"""Renames a filepath in several ways: path, basename and/or extension"""
+	orpath = os.path.dirname(input_file)
+	orbasename = os.path.splitext(os.path.basename(input_file))[0] 
+	orextension = os.path.splitext(os.path.basename(input_file))[1] 
 	
 	newfile = ""
-	
-	if path == None:	# Set path
-		newfile = orpath+"/"
+	if not path:
+		# Set path
+		newfile = orpath + "/"
 	else:
-		newfile = path+"/"
-	if basename == None:	# Set file basename
-		newfile = newfile+orbasename
+		newfile = path + "/"
+	if not basename:
+		# Set file basename
+		newfile = newfile + orbasename
 	else:
-		newfile = newfile+basename
-	if extension == None:	# Set file extension
-		newfile = newfile+orextension
+		newfile = newfile + basename
+	if not extension:
+		# Set file extension
+		newfile = newfile + orextension
 	else:
-		newfile = newfile+extension
-		
-	return newfile				
-
+		newfile = newfile + extension
+	return newfile	

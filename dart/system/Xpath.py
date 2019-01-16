@@ -1,108 +1,64 @@
 #!/usr/bin/env python3
 
-USAGE = """
-==========================================================================================
-
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
-					for Biomolecular Research, Utrecht university, The Netherlands
-Copyright (C):		2006 (DART project)
-DART version:		1.2 (25-11-2008)
-DART module: 		Xpath.py
-Module function:	Independent Xpath-like implementation for quering XML documents.
-					Load XML document as file, string or URL. XML documents can be
-					queried using the Evalaute function of Xpath. The syntax allows
-					to search for elements and attributes in the XML tree using a
-					dictionary notation. The tree is traversed in a hierarchical
-					manner. The syntax looks as follows:
-			
-					{1:{'element':'chain','attr':{'ID':'A'}},2:{'element':'residue',
-					 'attr':{'ID':'CYT','ID':'GUA'}}}
-			
-					Xpath searches the XML for the first instance of the element
-					'chain' which is than adressed as level 1. All following elements
-					must match the query. The first element has to match the attribute
-					with name ID and value A. Multiple attribute names can be queried
-					or non at all (all will be accepted).The instances of the XML
-					document that match the query will be stored in a dictionary with
-					the level as key. Relevant information can be extracted from the
-					nodes in this dictionary using the functions: getElem, getAttr and
-					getData. Results are stored in self.result
-					- getElem will return the element name associated with the node
-					- getAttr will return the attribute name and value associated with
-					  the node (if any).
-					- getData will return the data associated with the node (if any).
-			
-					These functions accept selections and can return the data as one
-					continues list of values (export='string') or as a list of lists
-					(export='list', default). All returned data will be checked on the
-					data type (string, float or boolean).
-					The dictionary of stored nodes can be queried again by suppling
-					Evaluate with the optione source=<node adress>. The function
-					ClearResult will empty the lists of stored results ready for
-					excepting a new query on stored nodes
-Module depenencies:	Standard python2.4 modules
-
-==========================================================================================
-"""
-
-"""Import modules"""
 from xml.dom import EMPTY_NAMESPACE, minidom, Node
 import sys
 import string
 import urllib.request
 import io
 
+
 class Xpath:
 	
 	"""Independent Xpath-like implementation for quering XML documents.
-           Load XML document as file, string or URL. XML documents can be
-           queried using the Evalaute function of Xpath. The syntax allows
-           to search for elements and attributes in the XML tree using a
-           dictionary notation. The tree is traversed in a hierarchical
-           manner. The syntax looks as follows:
-           
-           {1:{'element':'chain','attr':{'ID':'A'}},2:{'element':'residue',
-            'attr':{'ID':['CYT','GUA']}}}
-           
-           Xpath searches the XML for the first instance of the element
-           'chain' which is than adressed as level 1. All following elements
-           must match the query. The first element has to match the attribute
-           with name ID and value A. Multiple attribute names can be queried
-           or non at all (all will be accepted).The instances of the XML
-           document that match the query will be stored in a dictionary with
-           the level as key. Relevant information can be extracted from the
-           nodes in this dictionary using the functions: getElem, getAttr and
-           getData. Results are stored in self.result
-           - getElem will return the element name associated with the node
-           - getAttr will return the attribute name and value associated with
-             the node (if any).
-           - getData will return the data associated with the node (if any).
-           
-           These functions accept selections and can return the data as one
-           continues list of values (export='string') or as a list of lists
-           (export='list', default). All returned data will be checked on the
-           data type (string, float or boolean).
-           The dictionary of stored nodes can be queried again by suppling
-           Evaluate with the optione source=<node adress>. The function
-           ClearResult will empty the lists of stored results ready for
-           excepting a new query on stored nodes"""
+
+	Load XML document as file, string or URL. XML documents can be
+	queried using the Evalaute function of Xpath. The syntax allows
+	to search for elements and attributes in the XML tree using a
+	dictionary notation. The tree is traversed in a hierarchical
+	manner. The syntax looks as follows:
+
+	{1:{'element':'chain','attr':{'ID':'A'}},2:{'element':'residue',
+	'attr':{'ID':['CYT','GUA']}}}
+
+	Xpath searches the XML for the first instance of the element
+	'chain' which is than adressed as level 1. All following elements
+	must match the query. The first element has to match the attribute
+	with name ID and value A. Multiple attribute names can be queried
+	or non at all (all will be accepted).The instances of the XML
+	document that match the query will be stored in a dictionary with
+	the level as key. Relevant information can be extracted from the
+	nodes in this dictionary using the functions: getElem, getAttr and
+	getData. Results are stored in self.result
+	- getElem will return the element name associated with the node
+	- getAttr will return the attribute name and value associated with
+	the node (if any).
+	- getData will return the data associated with the node (if any).
+
+	These functions accept selections and can return the data as one
+	continues list of values (export='string') or as a list of lists
+	(export='list', default). All returned data will be checked on the
+	data type (string, float or boolean).
+	The dictionary of stored nodes can be queried again by suppling
+	Evaluate with the optione source=<node adress>. The function
+	ClearResult will empty the lists of stored results ready for
+	excepting a new query on stored nodes
+	
+	"""
 	
 	def __init__(self, inputfile):
-		
 		self.query = {}
 		self.level = 1
 		self.result = []
 		self.nodeselection = {}
-		
-		self.XMLdata = self._OpenXMLdoc(inputfile)
+		self.xml_data = self._open_xml_doc(inputfile)
 	
-	def _OpenXMLdoc(self, inputfile):
-		source = self._OpenAnything(inputfile)
+	def _open_xml_doc(self, inputfile):
+		source = self._open_anything(inputfile)
 		xmldoc = minidom.parse(source)
 		source.close
 		return xmldoc
 	
-	def _OpenAnything(self, inputfile):
+	def _open_anything(self, inputfile):
 		
 		if hasattr(inputfile, "read"):
 			return inputfile
@@ -114,7 +70,7 @@ class Xpath:
 			with urllib.request.urlopen(inputfile) as url:
 				s = url.read()
 				return s
-		except (IOError, OSError, AttributeError):
+		except (IOError, OSError, AttributeError, ValueError):
 			pass
 		
 		try:
@@ -263,7 +219,7 @@ class Xpath:
 		
 		if len(tmp) > 0:
 			if export == 'string':
-				strContent = string.join(tmp)
+				strContent = ''.join(tmp)
 				self.result.append(strContent.strip())
 			elif export == 'list':
 				self.result.append(tmp)
@@ -280,7 +236,7 @@ class Xpath:
 		
 		self.query = query
 		if source == None:
-			source = self.XMLdata
+			source = self.xml_data
 		
 		"""Walk the XML tree"""
 		self.nodeselection[0] = [source]
@@ -290,9 +246,7 @@ class Xpath:
 				self._WalkTree(parent=node,level=level)
 
 if __name__ == '__main__':
-	
 	"""For testing purposes"""
-	print(USAGE)
 	query = Xpath('test.xml')
 	query.Evaluate(query={1:{'element':'chain','attr':None},2:{'element':'resid','attr':{'ID':['CYT','GUA']}},3:{'element':'atom','attr':{'ID':'P'}}})
 	for node in query.nodeselection[2]:

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import os,sys,re
-from dart.system.Utils import *
-from numpy import *
-from dart.system.Constants import *
+import os
+import sys
+import re
+import dart.system.utils
+import dart.system.constants
 
 
 def WritePar(database,filename,verbose=False):
@@ -33,6 +34,7 @@ def WritePar(database,filename,verbose=False):
 
 	if verbose == False:
 		outfile.close()
+
 
 class InputOutputControl:
 
@@ -64,9 +66,9 @@ class InputOutputControl:
 		for n in files:
 			if os.path.isfile(n):
 				extension = os.path.splitext(n)[1]
-				if self.checkedinput.has_key(extension):
+				if extension in self.checkedinput:
 					self.checkedinput[extension].append(n)
-				elif self.checkedinput.has_key(os.path.basename(n)):
+				elif os.path.basename(n) in self.checkedinput:
 					self.checkedinput[os.path.basename(n)].append(n)	
 			else:
 				print("    * InputCheck ERROR: file", n, "not found")

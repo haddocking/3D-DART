@@ -5,8 +5,8 @@ import glob
 import sys
 import argparse
 from time import ctime
-from dart.system.Xpath import Xpath
-from dart.system.Utils import RenameFilepath
+from dart.system.xpath import Xpath
+from dart.system.utils import rename_file_path
 from dart.system.DARTserver import WebServer
 from dart.system.version import __version__
 
@@ -43,7 +43,6 @@ log = logging.getLogger("3D-DART")
 
 
 class CommandLineOptionParser:
-	
 	"""Parses command line arguments using optparse.
 
 	-h/--help for help
@@ -61,8 +60,9 @@ class CommandLineOptionParser:
 		
 		self.parse_command_line()
 		
-		#self.WorkflowXML()
-		#self.MakeWebForm()
+		self.geneterate_workflow_xml()
+		
+		#self.make_web_form()
 		
 	def parse_command_line(self):
 		"""Parsing command line arguments"""
@@ -79,6 +79,7 @@ class CommandLineOptionParser:
 
 		# Show help if no argument is given
 		if not len(sys.argv) > 1:
+			log.info(usage)
 			parser.print_help(sys.stderr)
 			log.error("Wrong number of arguments")
 			raise SystemExit
@@ -105,11 +106,17 @@ class CommandLineOptionParser:
 	
 		if self.option_dict['workflow']:
 			log.info("    * The following 3D-DART batch configuration file will be executed: {}".format(self.option_dict['workflow']))
-		
+			if self.option_dict['pluginseq']:
+				log.warning("Incompatible plugin sequence option detected")
+				raise SystemExit("Wrong command line")
+
 		if self.option_dict['pluginseq']:
 			log.info("    * The following command line plugin sequence will be excecuted:")
 			for plugin in self.option_dict['pluginseq']:
 				log.info("      - {}".format(plugin))
+			if self.option_dict['workflow']:
+				log.warning("Incompatible workflow option detected")
+				raise SystemExit("Wrong command line")
 			
 		if self.option_dict['input']:
 			log.info("    * The following files will be used as input for the batch sequence:")
@@ -120,6 +127,7 @@ class CommandLineOptionParser:
 		"""List all available plugins in plugin directory and all workflows in workflow directory"""
 		log.info("List of available plugins. Execute plugin with option -h/--help for more information")
 		log.info("    about the function of the plugin:")
+		# Plugins
 		plugindir = os.path.join(self.darth_path, 'plugins')
 		os.chdir(plugindir)
 		plugins = glob.glob('*.py')
@@ -127,7 +135,7 @@ class CommandLineOptionParser:
 		for plugin in plugins:
 			basename, extension = os.path.splitext(plugin)
 			log.info("    * {}".format(basename))
-		
+		# Workflow
 		log.info("List of available workflows:")
 		workflowdir = os.path.join(self.darth_path, 'workflows')
 		os.chdir(workflowdir)
@@ -136,59 +144,56 @@ class CommandLineOptionParser:
 			basename, extension = os.path.splitext(workflow)
 			log.info("    * {}".format(basename))
 				
-	def WorkflowXML(self):
-		
-		"""Generate workflow.xml file at startup. This file allways needs to be present. The source
-		   can be a pregenerated workflow file or a sequence of plugins supplied on the command line 
-		   with the -p or --plugin option."""
-		
-		if not self.option_dict['pluginseq'] == None:
+	def geneterate_workflow_xml(self):
+		"""Generate workflow.xml file at startup.
+
+		This file allways needs to be present. The source can be a pregenerated workflow 
+		file or a sequence of plugins supplied on the command line with the -p or --plugin option.
+		"""
+		if self.option_dict['pluginseq']:
 			
-			workflow_dict = self.WorkflowSequence()
+			workflow_dict = self.build_workflow_sequence()
 			
-			print("    * Generate workflow from command line constructed plugin batch sequence")
-			print("    * Check if all plugins are present and of a valid type")
+			log.info("    * Generate workflow from command line constructed plugin batch sequence")
+			log.info("    * Check if all plugins are present and of a valid type")
 			
 			plugins = []
 			for n in workflow_dict.values(): 
 				if not n in plugins: 
 					plugins.append(n)
-					self._TryPluginImport(n)
 		
-			print("    * Writing workflow XML file as workflow.xml")
-			
-			outfile = file('workflow.xml','w')
-			outfile.write("""<?xml version="1.0" encoding="iso-8859-1"?>\n""")
-			outfile.write("""<main id="DARTworkflow">\n""")
-			outfile.write("<meta>\n")
-			outfile.write("<name>workflow.xml</name>\n")
-			outfile.write("<datetime>"+ctime()+"</datetime>\n")
-			outfile.write("</meta>\n")
-			for key in workflow_dict:
-				outfile.write("<plugin id='"+workflow_dict[key]+"' job='"+str(key)+"'>")
-				exec("from plugins import "+workflow_dict[key])
-				exec("outfile.write(\n"+workflow_dict[key]+".PluginXML())")
-				outfile.write("\n</plugin>\n")
-			outfile.write("</main>\n")
-			outfile.close()
+			log.info("    * Writing workflow XML file as workflow.xml")
+			with open('workflow.xml', 'w') as outfile:
+				outfile.write("""<?xml version="1.0" encoding="iso-8859-1"?>\n""")
+				outfile.write("""<main id="DARTworkflow">\n""")
+				outfile.write("<meta>\n")
+				outfile.write("<name>workflow.xml</name>\n")
+				outfile.write("<datetime>{}</datetime>\n".format(ctime()))
+				outfile.write("</meta>\n")
+				for key in workflow_dict:
+					outfile.write("<plugin id='{0}' job='{1}'>".format(workflow_dict[key], str(key)))
+					exec("from plugins import {}".format(workflow_dict[key]))
+					exec("outfile.write(\n{}.PluginXML())".format(workflow_dict[key]))
+					outfile.write("\n</plugin>\n")
+				outfile.write("</main>\n")
 		
 			self.option_dict['workflow'] = 'workflow.xml'
 			
-			if self.option_dict['dry'] == True:
-				print("    * Option 'dry' is True, only write workflow.xml file")
-				sys.exit(0)
+			if self.option_dict['dry']:
+				log.info("    * Option 'dry' is enabled, only write workflow.xml file")
+				raise SystemExit
 			
-		elif not self.option_dict['workflow'] == None:
+		elif self.option_dict['workflow']:
 			
-			print("    * Check if all plugins in pre-supplied 3D-DART workflow", self.option_dict['workflow'], "are present and of a valid type")
+			log.info("    * Check if all plugins in pre-supplied 3D-DART workflow {} are present and of a valid type".format(self.option_dict['workflow']))
 		
 			if os.path.isfile(self.option_dict['workflow']):
 				pass
-			elif os.path.isfile(RenameFilepath(self.option_dict['workflow'],path=self.darth_path+"/workflows/",extension=".xml")):
-				self.option_dict['workflow'] = RenameFilepath(self.option_dict['workflow'],path=self.darth_path+"/workflows",extension=".xml")
+			elif os.path.isfile(rename_file_path(self.option_dict['workflow'], path=self.darth_path+"/workflows/", extension=".xml")):
+				self.option_dict['workflow'] = rename_file_path(self.option_dict['workflow'], path=self.darth_path+"/workflows", extension=".xml")
 			else:
-				print("     * ERROR: the workflow:", self.option_dict['workflow'], "cannot be found")
-				sys.exit(0)
+				log.error("     * ERROR: the workflow: {} cannot be found".format(self.option_dict['workflow']))
+				raise SystemExit
 				 	
 			query = Xpath(self.option_dict['workflow'])
 			query.Evaluate(query={1:{'element':'plugin','attr':None}})
@@ -201,14 +206,11 @@ class CommandLineOptionParser:
 			for n in workflow:
 				if not n in plugins:
 					plugins.append(n)
-					self._TryPluginImport(n)
 
-			print("    * Plugin sequence is valid")
+			log.info("    * Plugin sequence is valid")
 			
-	def WorkflowSequence(self):
-		
-		"""Construct squence of execution from command line string of plugins"""
-		
+	def build_workflow_sequence(self):
+		"""Build squence of execution from command line string of plugins"""
 		workflow_dict = {}
 		counter = 1
 		
@@ -218,7 +220,7 @@ class CommandLineOptionParser:
 			if pluginlist[0] == "FileSelector":
 				pass
 			else:
-				print("    * For program integrety reasons the FileSelector plugin needs to be present, including it")
+				log.info("    * For program integrety reasons the FileSelector plugin needs to be present, including it")
 				pluginlist[0:0] = ['FileSelector']
 			for plugin in pluginlist:
 				workflow_dict[str(counter)] = plugin
@@ -227,7 +229,7 @@ class CommandLineOptionParser:
 			if pluginlist[0] == "FileSelector":
 				pass
 			else:
-				print("    * For program integrety reasons the FileSelector plugin needs to be present, including it")
+				log.info("    * For program integrety reasons the FileSelector plugin needs to be present, including it")
 				pluginlist[0:0] = ['FileSelector']
 			for plugin in pluginlist:
 				workflow_dict[str(counter)] = plugin
@@ -235,14 +237,11 @@ class CommandLineOptionParser:
 		
 		return workflow_dict
 	
-	def MakeWebForm(self):
-	
+	def make_web_form(self):
 		"""Call DARTserver.py to make a webform from the workflow.xml file"""
-		
-		if self.option_dict['server'] == True and not self.option_dict['workflow'] == None:
-			print("--> Generating DARTserver compatible HTML webform from the workflow xml file")
+		if self.option_dict['server'] and self.option_dict['workflow']:
+			log.info("Generating DARTserver compatible HTML webform from the workflow xml file")
 			server = WebServer()
 			server.MakeWebForm(verbose=False,xml=self.option_dict['workflow'])
-		
-			print("    * Webform generated. Stopping DART")
-			sys.exit(0)			
+			log.info("    * Webform generated. Stopping DART")
+			raise SystemExit

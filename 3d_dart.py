@@ -6,10 +6,9 @@ import argparse
 import os
 import sys
 from time import ctime
-import numpy as Numeric
 from dart.system.version import __version__
-from dart.system.CommandLineParser import CommandLineOptionParser 
-from dart.system import FrameWork
+from dart.system.command_line_parser import CommandLineOptionParser
+from dart.system.framework import PluginExecutor
 
 
 # Logging
@@ -32,7 +31,7 @@ elif platform == 'Linux':
     os.environ["PATH"] = "{0}:{1}/software/X3DNA-linux/bin".format(os.getenv("PATH"), dart_base_path)
 else:
     log.error('Platform {0} not supported'.format(platform))
-    raise SystemExit()
+    raise SystemExit
     
 if base not in sys.path:
     sys.path.append(base)
@@ -47,10 +46,17 @@ def system_checks():
     if interpreter_version < 3.0:
         log.error("   * Python version 3.0 or higher required")
         log.error("   * Current version is: {}".format(sys.version[:5]))
-        raise SystemExit()
+        raise SystemExit
     else:
         log.info("   * Python version is: {}".format(sys.version[:5]))
     
+    try:
+        import numpy
+        log.info("   * NumPy version is: {}".format(numpy.__version__))
+    except:
+        log.error("   * NumPy is required")
+        raise SystemExit
+
     """General messages"""
     log.info("Your current working directory is: {}".format(os.getcwd()))
 
@@ -59,7 +65,7 @@ def exit_message():
     log.info("-"*110)
     log.info("3D-DART workflow sequence is executed succesfully")
     log.info("-"*110)
-    raise SystemExit()
+    raise SystemExit
 
 
 def welcome_message():
@@ -71,8 +77,11 @@ def welcome_message():
 
 if __name__ == "__main__":
     welcome_message()
+    
     system_checks()
+    
     options = CommandLineOptionParser(dart_path=base)
-    #opt_dict = options.option_dict
-    #FrameWork.PluginExecutor(opt_dict=opt_dict, DARTdir=base)
+    
+    PluginExecutor(opt_dict=options.option_dict, DARTdir=base)
+    
     exit_message()

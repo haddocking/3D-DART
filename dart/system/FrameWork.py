@@ -1,53 +1,46 @@
 #!/usr/bin/env python3
 
-USAGE= """
-==========================================================================================
-
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
-					for Biomolecular Research, Utrecht university, The Netherlands
-Copyright (C):		2006 (DART project)
-DART version:		1.2  (25-11-2008)
-DART module: 		FrameWork.py
-Module function:	Job distribution and controll class
-Module depenencies:	Standard python2.5 modules
-
-==========================================================================================
-"""
-
-import os, sys, glob, shutil, re, copy
+import os
+import sys
+import glob
+import shutil
+import re
+import copy
+import importlib
 from time import ctime
-from dart.system.Xpath import Xpath
+from dart.system.xpath import Xpath
 from dart.system.XMLwriter import Node
-from dart.system.Utils import MakeBackup
-from dart.system.IOlib import InputOutputControl
+from dart.system.utils import make_backup
+from dart.system.iolib import InputOutputControl
+
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("Plugins")
 
 
 class PluginExecutor:
 
 	"""This class takes care of the actual workflow execution"""
-
 	def __init__(self, opt_dict=None, DARTdir=None):
-		
 		self.DARTdir = DARTdir
 		self.rundir = ''
 		self.opt_dict = opt_dict
-		self.PluginExecutor()
+		self.plugin_executor()
 		
-	def _MainXMLdataHandler(self, mainxml):
-
-		"""Get list of elements for all first childs of the root, than
-	    	make dictionary with element data, then print info and return metadata dictionary"""
-
+	def _main_xml_data_andler(self, mainxml):
+		"""Gets the list of elements for all the first childs of the root, then 
+		makes a dictionary with element data, finally prints info and returns metadata dictionary"""
 		metadata = {}
 
-		"""Get all elements"""
+		# Get all elements
 		mainxml.Evaluate(query={1:{'element':'main','attr':{'id':'DARTworkflow'}},2:{'element':'meta','attr':None},3:{'element':None,'attr':None}})
 		for data in mainxml.nodeselection[3]:
 			mainxml.getElem(node=data,export='string')					
 		elementlist = mainxml.result
 		mainxml.ClearResult()
 
-		"""For element get data"""
+		# For element get data
 		for element in mainxml.nodeselection[3]:
 			mainxml.getData(node=element,export='string')			
 		elementdata = mainxml.result
@@ -72,17 +65,15 @@ class PluginExecutor:
 			metadata['workflowsequence'][jobnr[plugin]] = pluginid[plugin]
 					
 		"""Print data as info to user"""
-		print("--> Metadata belonging to workflow:", metadata['name'])
+		log.info("Metadata belonging to workflow: {}".format(metadata['name']))
 		for tag in metadata:
 			if type(metadata[tag]) == type({}):
-				print("    * Workflow "+tag+":")
+				log.info("    * Workflow {}:".format(tag))
 				flow = metadata[tag]
-				keys = flow.keys()
-				keys.sort()
-				for key in keys:
-					print("      %i = %s" % (key,flow[key]))
+				for key in sorted(flow.keys()):
+					log.info("      {0:.0f} = {1:s}".format(key, flow[key]))
 			else:
-				print("    * Workflow "+tag+":", metadata[tag])
+				log.info("    * Workflow {}:".format(metadata[tag]))
 
 		return metadata	
 	
@@ -91,8 +82,8 @@ class PluginExecutor:
 		"""Make a workflow directory were all data will be stored in. Make backup if neccesary"""
 		
 		self.rundir = os.path.join(os.getcwd(),name)
-		self.rundir = MakeBackup(self.rundir,report=True)
-		print("--> Create run directory:", os.path.basename(self.rundir))
+		self.rundir = make_backup(self.rundir, report=True)
+		log.info("Create run directory: {}".format(os.path.basename(self.rundir)))
 		os.mkdir(self.rundir)
 
 	def _Executor(self, plugin, mainxml, step):
@@ -101,7 +92,7 @@ class PluginExecutor:
 		paramdict = self._ParamDictHandler(mainxml,plugin,str(step))
 
 		if paramdict['useplugin']:
-			print("--> Instantiate plugin:", plugin)
+			log.info("Instantiate plugin: {}".format(plugin))
 			if step == 1:
 				if self.opt_dict['input'] is not None:
 					inputlist = self.opt_dict['input']
@@ -114,8 +105,11 @@ class PluginExecutor:
 			checked.CheckInput(inputlist,metadict['input'])
 			filelist = checked.DictToList()
 			self._ChangeDir(plugin, step)
-			exec("from plugins."+plugin+" import PluginCore as PluginCore")
-			PluginCore(paramdict,filelist)
+			#exec("from plugins.{} import PluginCore as PluginCore".format(plugin))
+			
+			module = importlib.import_module("dart.plugins.{}".format(plugin))
+			PluginCore = getattr(module, "PluginCore")
+			PluginCore(paramdict, filelist)
 			outputlist = checked.CheckOutput(glob.glob('*.*'),metadict['output'])
 		
 			os.chdir(self.rundir)
@@ -148,9 +142,9 @@ class PluginExecutor:
 			metadata[element] = elementdata[elementlist.index(element)]
 		
 		"""Print data as info to user"""
-		print("--> Metadata belonging to plugin:", plugin)
+		log.info("Metadata belonging to plugin: {}".format(plugin))
 		for data in metadata:
-			print("    * Plugin %s: %s" % (data,metadata[data]))
+			log.info("    * Plugin {}: {}".format(data,metadata[data]))
 		
 		return metadata
 
@@ -181,11 +175,11 @@ class PluginExecutor:
 			
 		"""Print data as info to user"""
 		if paramdict['useplugin']:
-			print("--> Variables defined for executing the plugin core:")
+			log.info("Variables defined for executing the plugin core:")
 			for parameter in paramdict:
-				print("    * Variable %s: %s" % (parameter,paramdict[parameter]))
+				log.info("    * Variable {}: {}".format(parameter,paramdict[parameter]))
 		else:
-			print("--> Use this plugin set to: False")
+			log.info("Use this plugin set to: False")
 		
 		return paramdict
 
@@ -228,7 +222,7 @@ class PluginExecutor:
 		dirname = "jobnr"+str(step)+"-"+plugin
 		jobdir = os.path.join(basedir,dirname)
 		
-		print("--> Create job directory for plugin:", os.path.basename(jobdir))
+		log.info("Create job directory for plugin: {}".format(os.path.basename(jobdir)))
 		os.mkdir(jobdir)
 		os.chdir(jobdir)
 
@@ -252,21 +246,22 @@ class PluginExecutor:
 		outfile.write(self.xmlroot.xml())
 		outfile.close
 	
-	def PluginExecutor(self):
-		
-		"""Get meta data from workflow xml file"""
+	def plugin_executor(self):
+		"""Executes the plugins specified in this workflow"""
+
+		# Get meta data from workflow xml file
 		mainxml = Xpath(self.opt_dict['workflow'])
-		self.maindict = self._MainXMLdataHandler(mainxml)
+		self.maindict = self._main_xml_data_andler(mainxml)
 	
-		"""Make main workflow directory"""
+		# Make main workflow directory
 		self._MakeRundir(os.path.basename(os.path.splitext(self.maindict['name'])[0]))
 		shutil.copy(self.opt_dict['workflow'],self.rundir)
 		os.chdir(self.rundir)
 	
-		"""Write job output to xml file"""
+		# Write job output to xml file
 		self.xmlroot = Node("container", ID="filelist") 
 	
-		"""Executing all plugins"""	
+		# Executing all plugins
 		steps = len(self.maindict['workflowsequence'].keys())
 		step = 1
 		while step < (steps+1):
@@ -276,10 +271,9 @@ class PluginExecutor:
 			step = step+1	
 	
 		self._OutputToFile()
-	
+
+
 if __name__ == "__main__":
-	
 	"""For testing the script"""
-	
 	opt_dict={'workflow':'workflow.xml'}
 	PluginExecutor(opt_dict)

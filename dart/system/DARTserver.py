@@ -1,32 +1,27 @@
 #!/usr/bin/env python3
 
-USAGE = """
-==========================================================================================
-
-Author:			          Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
-			                for Biomolecular Research, Utrecht university, The Netherlands
-Copyright (C):		    2012 (DART project)
-DART version:		      1.3  (17-01-2012)
-DART system module: 	DARTserver.py
-Module function:      Parses all information from the workflow XML file as a webform to
-                      edit. Retrieved webform information is saved as an updated XML
-                      file and executed as DART workflow. 
-Dependencies:		      Standard python and CGI module (included in Python)
-
-==========================================================================================
+"""
+Parses all information from the workflow XML file as a webform to edit.
+Retrieved webform information is saved as an updated XML file and executed as DART workflow.
 """
 
-"""Import Modules"""
-import cgi, os, sys, shutil, glob, time, subprocess
-from dart.system.Xpath import Xpath
-from dart.system.Constants import *
+import cgi
+import os
+import sys
+import shutil
+import glob
+import time
+import subprocess
+from dart.system.xpath import Xpath
+from dart.system.constants import *
+
 
 class WebServer:
 
 	"""Make a HTML webform from the data in the workflow XML file. Retrieve data from
 	   the webform and make a new (custom) workflow.xml file to be excecuted"""
 	
-	def __init__(self,DARTDIR=None, remote_env=None):
+	def __init__(self, DARTDIR=None, remote_env=None):
 	
 		self.DARTDIR = DARTDIR
 		self.jobid = str(int(time.time()))
