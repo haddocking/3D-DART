@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 
-USAGE = """
-==========================================================================================
-
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
-					for Biomolecular Research, Utrecht university, The Netherlands
-Copyright (C):		2007 (DART project)
-DART version:		1.2  (25-11-2008)
-DART plugin: 		PDBeditor.py
+"""
 Input:				PDB data file and any of the allowed options, any order and 
 					combined.
 Output:				A new PDB file or XML representation.
@@ -23,29 +16,30 @@ Plugin function:	A suite of functions to modify PDB files. Features include:
 					convert PDB to an XML representation.
 Examples:			PDBeditor.py -f test.pdb -kn test_fixed.pdb
 					PDBeditor.py -f test.pdb -r 1 -c B -adg
-Dependencies:		Standard python2.3 or higher. DART package (XMLwriter,
-					and Constants modules)
-
-==========================================================================================
 """
 
-"""Import modules"""
-import os, sys, re, glob
+import os
+import sys
+import re
+import glob
+from optparse import OptionParser
 
-"""Setting pythonpath variables if run from the command line"""
+# Setting pythonpath variables if run from the command line
 base, dirs = os.path.split(os.path.dirname(os.path.join(os.getcwd(), __file__)))
-
-if base in sys.path:
-    pass
-else:
+if not base in sys.path:
     sys.path.append(base)
 
-from system.XMLwriter import Node
-from system.Constants import *
+from dart.system.XMLwriter import Node
+from dart.system.constants import blank
+
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("PDBeditor")
 
 
 def PluginXML():
-    PluginXML = """
+    xml = """
 <metadata>
  <name>PDB formating options</name>
  <input type="Filetype">.pdb</input>
@@ -70,29 +64,28 @@ def PluginXML():
  <option type="name" form="text" text="Give your structure a name"></option>
  <option type="pdb2xml" form="checkbox" text="Convert PDB to DART XML representation">False</option>
 </parameters>"""
-
-    return PluginXML
+    return xml
 
 
 def PluginCore(paramdict, inputlist):
-    print "--> Starting PDBeditor"
-
-    """Split ensemble of PDB files in separate PDB files"""
+    log.info("Starting PDBeditor")
+    # Split ensemble of PDB files in separate PDB files
     if not paramdict['splitpdb'] == None:
         pdb = PDBeditor()
         for files in inputlist:
-            print("    * Spliting ensemble PDB in individual PDB files on %s statement" % paramdict['splitpdb'])
-            pdb.SplitPDB(ensemble=files, mode=paramdict['splitpdb'])
-        sys.exit(0)
+            log.info("    * Spliting ensemble PDB in individual PDB files on {} statement".format(paramdict['splitpdb']))
+            pdb.split_pdb(ensemble=files, mode=paramdict['splitpdb'])
+        raise SystemExit
 
-    filecount = 1  # to keep track of processed files in the PDB joining process
+    # To keep track of processed files in the PDB joining process
+    filecount = 1
 
     for files in inputlist:
 
         pdb = PDBeditor()
-        pdb.ReadPDB(files)
+        pdb.read_pdb(files)
 
-        """Perform fixes to the pdb file to make it suitable for HADDOCK"""
+        # Perform fixes to the pdb file to make it suitable for HADDOCK
         if paramdict['pdb2haddock']:
             paramdict['NA1to3'] = True
             paramdict['NA3to1'] = False
@@ -101,49 +94,49 @@ def PluginCore(paramdict, inputlist):
             paramdict['noheader'] = True
             paramdict['nohetatm'] = True
 
-        """Convert Nucleic-Acids residue one-letter-code to three-letter-code or vice versa"""
+        # Convert Nucleic-Acids residue one-letter-code to three-letter-code or vice versa
         if paramdict['NA1to3']:
-            print "    * Convert Nucleic-Acids one-letter-code to three-letter-code"
+            log.info("    * Convert Nucleic-Acids one-letter-code to three-letter-code")
             pdb.NAresid1to3()
         if paramdict['NA3to1']:
-            print "    * Convert Nucleic-Acids three-letter-code to one-letter-code (wwwPDB notation)"
+            log.info("    * Convert Nucleic-Acids three-letter-code to one-letter-code (wwwPDB notation)")
             pdb.NAresid3to1()
 
-        """Convert IUPAC atom naming to CNS"""
+        # Convert IUPAC atom naming to CNS
         if paramdict['IUPACtoCNS']:
-            print "    * Convert IUPAC atom notation to CNS atom notation"
+            log.info("    * Convert IUPAC atom notation to CNS atom notation")
             pdb.IUPACtoCNS()
 
-        """Place HADDOCK chain ID in propper place"""
+        # Place HADDOCK chain ID in propper place
         if paramdict['xsegchain']:
-            print "    * Set seg ID to position of chain ID"
+            log.info("    * Set seg ID to position of chain ID")
             pdb.XsegChain()
 
-        """Set the chain ID"""
+        # Set the chain ID
         if paramdict['setchainID'] is not None:
             chainID = paramdict['setchainID'].split(',')
             try:
                 old = chainID[0].upper()
                 new = chainID[1].upper()
-                print "    * Converting chain ID:", old, "to chain ID:", new
+                log.info("    * Converting chain ID: {} to chain ID: {}".format(old, new))
                 pdb.SetchainID(old=old, new=new)
             except:
                 new = chainID[0].upper()
-                print "    * Converting all to chain ID:", new
+                log.info("    * Converting all to chain ID: {}".format(new))
                 pdb.SetchainID(new=new)
 
-        """Renumbering residues"""
+        # Renumbering residues
         if paramdict['reres'] is not None:
-            print "    * Renumber residues starting from:", paramdict['reres']
+            log.info("    * Renumber residues starting from: {}".format(paramdict['reres']))
             pdb.Reres(paramdict['reres'])
 
-        """Renumber atoms"""
+        # Renumber atoms
         if paramdict['reatom'] is not None:
-            print "    * Renumber atoms starting from:", paramdict['reatom']
+            log.info("    * Renumber atoms starting from: {}".format(paramdict['reatom']))
             pdb.Reatom(paramdict['reatom'])
             pdb.CorrectConect(paramdict['reatom'])
 
-        """Make XML representation of pdb"""
+        # Make XML representation of pdb
         if paramdict['pdb2xml']:
             xml = pdb.PDB2XML()
 
@@ -151,13 +144,11 @@ def PluginCore(paramdict, inputlist):
             basename, extension = os.path.splitext(root)
             outfile = basename + ".xml"
 
-            print "    * Generating DART XML representation of the PDB as:", outfile
+            log.info("    * Generating DART XML representation of the PDB as: {}".format(outfile))
+            with open(outfile, 'w') as out:
+                out.write(xml.xml())
 
-            out = file(outfile, 'w')
-            out.write(xml.xml())
-            out.close
-
-        """Write new PDB file"""
+        # Write new PDB file
         if paramdict['pdb2xml'] == False and paramdict['joinpdb'] == False and paramdict['splitpdb'] == None:
             if paramdict['name'] == None:
                 root = os.path.basename(files)
@@ -175,24 +166,23 @@ def PluginCore(paramdict, inputlist):
                         else:
                             outfile = newname
                             break
-                        count = count + 1
+                        count += 1
                 else:
                     outfile = paramdict['name']
 
-            print "    * Printing fixed pdb file as:", outfile
-            pdb.WritePDB(file_out=outfile, join=False, modelnr=0, noheader=paramdict['noheader'],
-                         nofooter=paramdict['nofooter'], nohetatm=paramdict['nohetatm'])
+            log.info("    * Printing fixed pdb file as: {}".format(outfile))
+            pdb.write_pdb(file_out=outfile, join=False, modelnr=0, noheader=paramdict['noheader'], 
+                nofooter=paramdict['nofooter'], nohetatm=paramdict['nohetatm'])
 
         elif paramdict['pdb2xml'] == False and paramdict['joinpdb'] == True and paramdict['splitpdb'] == None:
             if paramdict['name'] == None:
                 outfile = 'joined.pdb'
             else:
                 outfile = paramdict['name']
-            print "    * Append", os.path.basename(files), "to concatenated file:", outfile
-            pdb.WritePDB(file_out=outfile, join=True, modelnr=filecount, noheader=True, nofooter=True,
-                         nohetatm=paramdict['nohetatm'])
-
-        filecount = filecount + 1
+            log.info("    * Append {} to concatenated file: {}".format(os.path.basename(files), outfile))
+            pdb.write_pdb(file_out=outfile, join=True, modelnr=filecount, noheader=True, nofooter=True,
+                nohetatm=paramdict['nohetatm'])
+        filecount += 1
 
 
 # ================================================================================================================================#
@@ -350,25 +340,23 @@ class PDBeditor:
         self.sequence = {}
         self.firstatnr = 1
 
-    def ReadPDB(self, inputfile, debug=0):
+    def read_pdb(self, inputfile, debug=False):
+        """Reads a PDB file from input file name or file descriptor"""
+        try:
+            with open(inputfile) as readfile:
+                lines = readfile.readlines()
+                self.read_pdb_lines(lines, debug)
+        except:
+            lines = inputfile.readlines()
+            self.read_pdb_lines(lines, debug)
 
-        # check if passed filename string or a file descriptor
-        if type(inputfile) == type(sys.stdin):
-            readfile = inputfile
-        else:
-            readfile = file(inputfile, 'r')
 
-        lines = readfile.readlines()
-        self.ReadPDBlines(lines, debug)
+    def read_pdb_lines(self, lines, debug=False):
+        """Reads a list of PDB-format file lines in to the Protein class object.
 
-    def ReadPDBlines(self, lines, debug=0):
-
-        """
-        Reads a list of PDB-format file lines in to the Protein class object.
         Thus can be called by another routine that already has the lines in a list.
         Returns the number of atoms read in.
         """
-
         i = 0
         atom_hetatm = re.compile('(ATOM  |TER   |HETATM)')
         head = re.compile('^(HEADER|COMPND|SOURCE|JRNL|HELIX|REMARK|SEQRES|CRYST1|SCALE|ORIG)')
@@ -380,7 +368,6 @@ class PDBeditor:
         for line in lines:
             if atom_hetatm.match(line):
                 line = line[:-1]
-
                 # Add TER statement if change in chainid
                 if len(self.chain) and not self.chain[-1] == line[21]:
                     self.label.append('TER   ')
@@ -408,8 +395,8 @@ class PDBeditor:
                     self.coord.append((float(line[30:38]), float(line[38:46]), float(line[46:54])))  # X,Y,Z coordinates
                 except:
                     if not line[0:3] == 'TER' or line[0:5] == 'MODEL':
-                        print "    * ERROR: coordinate error in line:"
-                        print "     ", line
+                        log.error("    * ERROR: coordinate error in line:")
+                        log.error("     {}".format(line))
 
                 try:
                     self.occ.append(float(line[54:60]))
@@ -451,18 +438,16 @@ class PDBeditor:
         if debug:
             return len(self.atnum), self.atcounter
 
-    def WritePDB(self, file_out, join=False, modelnr=0, noheader=False, nofooter=False, nohetatm=False):
+    def write_pdb(self, file_out, join=False, modelnr=0, noheader=False, nofooter=False, nohetatm=False):
+        """Saves the Protein class object to a PDB-format file.
 
-        """
-        Saves the Protein class object to a PDB-format file
         if noheader = True, no header (REMARK etc.) or footer lines are written
         if nohetatm = True, no hetero atoms are written
         """
-
         if join == True:
             out = open(file_out, 'a')
         else:
-            out = file(file_out, 'w')
+            out = open(file_out, 'w')
 
         if noheader == False:
             for i in range(len(self.title)):
@@ -473,9 +458,9 @@ class PDBeditor:
         if join == True:
             out.write('MODEL ' + str(modelnr) + '\n')
 
-        for i in xrange(len(self.resnum)):
+        for i in range(len(self.resnum)):
             if self.label[i] == 'ATOM  ':
-                self.WritePDBline(out, i)
+                self.write_pdb_line(out, i)
             elif self.label[i] == 'TER   ':
                 out.write('TER   \n')
             elif self.label[i] == 'HETATM' and not nohetatm:
@@ -497,28 +482,19 @@ class PDBeditor:
             self.end = ['ENDMDL']
             for i in range(len(self.end)):
                 out.write("%s\n" % self.end[i])
-
         out.close()
 
-    def WritePDBline(self, FD, i):
-
-        """
-        Writes a single line of data in the PDB-format
-            called by writePDB
-        """
-
-        FD.write('%-6s%5i %-4s%1s%-4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f%10s%2s\n' %
+    def write_pdb_line(self, file_descriptor, i):
+        """Writes a single line of data in the PDB-format called by write_pdb"""
+        file_descriptor.write('%-6s%5i %-4s%1s%-4s%1s%4i%1s   %8.3f%8.3f%8.3f%6.2f%6.2f%10s%2s\n' %
                  (self.label[i], self.atnum[i], self.atname[i], self.atalt[i],
                   self.resname[i], self.chain[i], self.resnum[i], self.resext[i],
                   self.coord[i][0], self.coord[i][1], self.coord[i][2], self.occ[i], self.b[i], blank, self.elem[i]))
 
-    def SplitPDB(self, ensemble=None, mode=None):
+    def split_pdb(self, ensemble=None, mode=None):
+        """Splits ensemble of PDB files in seperate files based on MODEL or TER tags"""
 
-        """
-        Split ensemble PDB files in seperate PDB files based on MODEL or TER tag
-        """
-
-        # check if passed filename string or a file descriptor
+        # Check if passed filename string or a file descriptor
         if type(ensemble) == type(sys.stdin):
             readfile = ensemble
         else:
@@ -544,149 +520,122 @@ class PDBeditor:
                 linenr += 1
             if atom_hetatm.match(line):
                 models[modelcount].append(linenr)
-            linenr = linenr + 1
+            linenr += 1
 
         if len(models) == 1:
-            print "    * No splitting occured, splitting statement not found"
+            log.warning("    * No splitting occured, splitting statement not found")
         else:
             for model in models.keys():
                 outfile = os.path.splitext(ensemble)[0] + '_' + str(model) + '.pdb'
-                out = file(outfile, 'w')
-                print "    * Writing model %s as %s" % (model, outfile)
-                for line in models[model]:
-                    out.write(lines[line])
-                out.write('END')
-                out.close()
+                with open(outfile, 'w') as out:
+                    log.info("    * Writing model {} as {}".format(model, outfile))
+                    for line in models[model]:
+                        out.write(lines[line])
+                    out.write('END')
 
     def NAresid1to3(self):
-
-        """
-        Convert list of 1-letter nucleic-acid code sequence to 3-letter code and update resname
-        """
-
+        """Converts a list of 1-letter nucleic-acid to 3-letter code and updates resname"""
         seq3 = []
-
         for resid1 in self.resname:
             try:
+                # If NAresid is one-letter code, convert to three-letter code
                 resid3 = NAres3[
-                    NAres1.index(resid1.upper())]  # If NAresid is one-letter code, convert to three-letter code
+                    NAres1.index(resid1.upper())]
                 seq3.append(resid3)
-            except ValueError, err:
-                if resid1.upper() in AAres3:  # If resid is amino-acid three letter code, just append
+            except ValueError:
+                if resid1.upper() in AAres3:
+                    # If resid is amino-acid three letter code, just append
                     seq3.append(resid1.upper())  # Amino-acid one letter code in PDB not accepted(expected)
-                elif resid1.upper() == 'HOH ':  # Waters are neglected, just append.
+                elif resid1.upper() == 'HOH ':
+                    # Waters are neglected, just append.
                     seq3.append(resid1.upper())
-                elif resid1.upper() in NAres3:  # If NAresid allready in three letter code, just append
+                elif resid1.upper() in NAres3:
+                    # If NAresid allready in three letter code, just append
                     seq3.append(resid1.upper())
                 else:
-                    print "      - WARNING: no match for residue: %s" % (
-                    resid1)  # If not of the above, raise exception.
+                    # If not of the above, raise exception
+                    log.warning("No match for residue: {}".format(resid1))
                     seq3.append(resid1.upper())
 
         if len(seq3) == len(self.resname):
             self.resname = seq3
-        else:
-            pass
 
     def NAresid3to1(self):
+        """Converts a list of 3-letter nucleic-acid code sequence to 1-letter code and updates resname.
 
+        The 1-letter code is the new (2006) wwwPDB notation. This is DA,DT,DC,DG for DNA and RA,RU,RG,RC for RNA.
         """
-        Convert list of 3-letter nucleic-acid code sequence to 1-letter code and update resname. The 1-letter code is the new
-        (2006) wwwPDB notation. This is DA,DT,DC,DG for DNA and RA,RU,RG,RC for RNA.
-        """
-
-        print "      - WARNING: The conversion of nucleic-acid three-letter code to two-letter code does not check for ribose or"
-        print "                 deoxy-ribose. If Uracil is found the structure is regarded as RNA otherwise as DNA. Please check"
-        print "                 your structure in case of mixed conformations."
+        log.warning("The conversion of nucleic-acid three-letter code to two-letter code does not check for ribose or")
+        log.warning("    deoxy-ribose. If Uracil is found the structure is regarded as RNA otherwise as DNA.")
+        log.warning("    Please check your structure in case of mixed conformations.")
 
         seq1 = []
         THREELETTER = ['--- ', 'CYT ', 'THY ', 'GUA ', 'ADE ', 'URI ']
         DNA1LETTER = ['  - ', ' DC ', ' DT ', ' DG ', ' DA ', ' RU ']
         RNA1LETTER = ['  - ', ' RC ', ' DT ', ' RG ', ' RA ', ' RU ']
 
-        if 'URI ' in self.resname:
-            RNA = True
-            DNA = False
-        else:
-            DNA = True
-            RNA = False
+        is_RNA = 'URI ' in self.resname
+        is_DNA = not is_RNA
 
         for resid3 in self.resname:
             try:
-                if RNA == True:
+                if is_RNA:
                     resid1 = RNA1LETTER[THREELETTER.index(resid3.upper())]
                     seq1.append(resid1)
-                elif DNA == True:
+                elif is_DNA:
                     resid1 = DNA1LETTER[THREELETTER.index(resid3.upper())]
                     seq1.append(resid1)
-            except ValueError, err:
-                print "      - WARNING: no match for residue:", resid3
+            except ValueError:
+                log.warning("WARNING: no match for residue: {}".format(resid3))
                 seq1.append(resid3.upper())
 
         if len(seq1) == len(self.resname):
             self.resname = seq1
-        else:
-            pass
 
     def SetchainID(self, old=None, new=None):
-
-        """
-        Convert the chain ID from the old ID to the user supplied new ID if None do nothing.
+        """Converts the chain ID from the old ID to the user supplied new ID if None do nothing.
+        
         Option examples: (A) all to A, (A,B) all A to B. Lower case is converted to upper case.
         """
-
         newchainseq = []
-
         if not old and new == None:
             for chainid in self.chain:
                 if chainid == old:
                     newchainseq.append(new)
                 else:
                     newchainseq.append(chainid)
-
         else:
             for chainid in self.chain:
                 newchainseq.append(new)
-
-        if len(newchainseq) == len(self.chain):  # in case of any errors that yield non-equal arrays
+        if len(newchainseq) == len(self.chain):
+            # in case of any errors that yield non-equal arrays
             self.chain = newchainseq
-        else:
-            pass
 
     def IUPACtoCNS(self):
+        """Converts IUPAC atom type notation to CNS atom type notation.
 
-        """
-        Convert IUPAC atom type notation to CNS atom type notation. Get info from IUPAC and CNS lists from Constants.py.
+        Get info from IUPAC and CNS lists from Constants.py.
         Currently only conversion of nucleic-acid atom types.
         """
-
         newatomseq = []
-
         for atom in self.atname:
             try:
                 newatom = CNS[IUPAC.index(atom)]
                 newatomseq.append(newatom)
             except ValueError:
                 newatomseq.append(atom)
-
         if len(newatomseq) == len(self.atname):
             self.atname = newatomseq
-        else:
-            pass
 
     def PDB2XML(self):
-
-        """
-        Makes a XML representation of the PDB. Needs system.XMLwriter
-        """
-
+        """Makes a XML representation of the PDB"""
         main = Node("DART_pdbx")
 
         acount = 0
         lastchain = ' '
         lastresnum = ' '
 
-        for i in xrange(len(self.atnum)):
+        for i in range(len(self.atnum)):
             if i == 0:
                 lastchain = self.chain[i]
                 lastresnum = self.resnum[i]
@@ -700,6 +649,7 @@ class PDBeditor:
                 resid += atom
                 chain += resid
                 main += chain
+
             else:
                 if self.chain[i] == lastchain:
                     lastchain = self.chain[i]
@@ -728,13 +678,12 @@ class PDBeditor:
                     resid += atom
                     chain += resid
                     main += chain
-
         return main
 
     def Reres(self, start):
+        """Renumbers residues
 
-        """
-        Renumber residues. Option example: (4) renumber starting from 4.
+        Option example: (4) renumber starting from 4.
         """
         start = int(start)
         lastresnum = -9999
@@ -744,7 +693,7 @@ class PDBeditor:
         idres = start - 1
         icount = 0
 
-        for i in xrange(len(self.resnum)):
+        for i in range(len(self.resnum)):
             if i == 0:
                 icount += 1
                 lastchain = self.chain[i]
@@ -766,33 +715,23 @@ class PDBeditor:
                     self.resnum[i] = idres
 
     def Reatom(self, start):
+        """Renumbers atoms
 
+        Option example: (4) renumber complete list starting from 4.
         """
-        Renumber atoms. Option example: (4) renumber complete list starting from 4.
-        """
-
         start = int(start)
-
         newatomnum = range(start, (len(self.atnum) + start))
-
         if len(newatomnum) == len(self.atnum):
             self.atnum = newatomnum
-        else:
-            pass
 
     def CorrectConect(self, number):
-
-        """
-        Correct the CONECT statement when renumbering atoms.
-        """
-
+        """Corrects the CONECT statement when renumbering atoms"""
         diff = number - self.firstatnr
         correctconect = []
-
         for line in self.footer:
             p = line.split()
             if p[0] == 'CONECT':
-                for atomnr in xrange(1, len(p)):
+                for atomnr in range(1, len(p)):
                     p[atomnr] = int(p[atomnr]) + diff
                 correct = "CONECT"
                 for n in p[1:]:
@@ -800,44 +739,32 @@ class PDBeditor:
                 correctconect.append(correct)
             else:
                 correctconect.append(line)
-
         self.footer = correctconect
 
     def XsegChain(self):
-
-        """
-        Copy SEGID to CHAIN location.
-        """
-
+        """Copies SEGID to CHAIN location"""
         hdoc_chain = []
         for chainid in self.hdoc_chain:
             chainid.strip()
-            if chainid == ' ':
-                pass
-            else:
+            if chainid != ' ':
                 hdoc_chain.append(chainid)
 
         if len(hdoc_chain) > 0:
             self.chain = self.hdoc_chain
-        else:
-            pass
 
 
 if __name__ == '__main__':
-
-    """Running from the command line"""
-    from optparse import *
 
     """Parse command line arguments"""
     option_dict = CommandlineOptionParser().option_dict
 
     """Check for input"""
     if option_dict['input'] == None:
-        print "    * Please supply pdb file using option -f or use option -h/--help for usage"
-        sys.exit(0)
+        log.info("    * Please supply pdb file using option -f or use option -h/--help for usage")
+        raise SystemExit
     else:
         inputlist = option_dict['input']
 
     """Envoce main functions"""
     PluginCore(option_dict, inputlist)
-    sys.exit(0)
+    raise SystemExit
