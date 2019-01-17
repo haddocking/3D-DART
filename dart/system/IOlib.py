@@ -3,7 +3,7 @@
 import os
 import sys
 import re
-import dart.system.utils
+from dart.system.utils import rename_file_path
 import dart.system.constants
 
 
@@ -97,7 +97,7 @@ class InputOutputControl:
 		self.checkedinput[required] = []
 		
 		for n in self.checkedinput[reference]:
-			expected = RenameFilepath(n,path=os.getcwd(),extension=required)
+			expected = rename_file_path(n,path=os.getcwd(),extension=required)
 			if os.path.isfile(expected):
 				self.checkedinput[required].append(expected)
 			else:

@@ -185,24 +185,16 @@ def PluginCore(paramdict, inputlist):
         filecount += 1
 
 
-# ================================================================================================================================#
-# 										PLUGIN SPECIFIC DEFINITIONS BELOW THIS LINE												 #
-# ================================================================================================================================#
-
 class CommandlineOptionParser:
     """Parses command line arguments using optparse"""
 
     def __init__(self):
-
         self.option_dict = {}
         self.option_dict = self.CommandlineOptionParser()
 
     def CommandlineOptionParser(self):
-
         """Parsing command line arguments"""
-
-        usage = "usage: %prog" + USAGE
-        parser = OptionParser(usage)
+        parser = OptionParser()
 
         parser.add_option("-f", "--file", action="callback", callback=self.varargs, dest="inputfile", type="string",
                           help="Supply pdb inputfile(s). Standard UNIX selection syntax accepted")

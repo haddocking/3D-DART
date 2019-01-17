@@ -1,13 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-USAGE= """
-==========================================================================================
-
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center for 
-					Biomolecular Research, Utrecht university, The Netherlands.
-Copyright (C):		2006 (DART project)
-DART version:		1.2 (25-11-2008)
-DART plugin: 		X3DNAanalyze.py
+"""
 Input:				PDB files, 3DNA .out files or files containing a list of 
 					these files. Any of the allowed options, any order or combined.
 Output:				.par,.out,.dat,.aux,.cf7,.helical,.curves for each analysed 
@@ -28,35 +21,40 @@ Plugin function:	This plugin handels all 3DNA analysis routines. It requiers 3DN
 					either supplying the program with 3DNA .par files or .out files or 
 					a list file containing the names of the input files. 
 Examples:			X3DNAanalyze -f *.pdb
-					X3DNAanalyze -f selection.list			
-Dependencies:		Standard python2.3 or higher modules, 3DNA
-
-==========================================================================================
+					X3DNAanalyze -f selection.list
 """
 
-"""Import modules"""
-import sys, os, glob, re, copy, string
+import sys
+import os
+import glob
+import re
+import copy
+import string
 from operator import itemgetter
 from time import ctime
-from numpy import *
+from optparse import OptionParser
+import numpy as np
 
-"""Setting pythonpath variables if run from the command line"""
+# Setting pythonpath variables if run from the command line
 base, dirs = os.path.split(os.path.dirname(os.path.join(os.getcwd(), __file__)))
 
-if base in sys.path:
-	pass
-else:
+if base not in sys.path:
 	sys.path.append(base)
 
-"""Import DART specific modules"""
-from system.Utils import FileRootRename, TransformDash
-from system.IOlib import InputOutputControl
-from system.Constants import *
-from QueryPDB import GetSequence, NAsummery
-from PDBeditor import PDBeditor
+# Import DART specific modules
+from dart.system.utils import file_root_rename, transform_dash
+from dart.system.iolib import InputOutputControl
+from dart.plugins.QueryPDB import GetSequence, NAsummery
+from dart.plugins.PDBeditor import PDBeditor
+
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("X3DNAAnalyze")
+
 
 def PluginXML():
-	PluginXML = """ 
+	xml = """ 
 <metadata>
  <name>3DNA nucleic acid analysis routines</name>
  <function>This plugin handels all 3DNA analysis routines. It requiers 3DNA to be 
@@ -85,72 +83,63 @@ def PluginXML():
  <option type="multistructure" form="checkbox" text="Perform multistructure analysis">True</option>
  <option type="master" form="file" text="Provide a master file for multistructure analysis"></option>
 </parameters>"""
-	
-	return PluginXML
-	
+	return xml
+
+
 def PluginCore(paramdict, inputlist):
 	
-	"""Checking inputlist"""
+	# Checking inputlist
 	checked = InputOutputControl()
 	checked.CheckInput(inputlist)
 	
-	if checked.checkedinput.has_key('.pdb'):
+	if '.pdb' in checked.checkedinput:
 		x3dna = X3DNAanalyze(paramdict)
 		x3dna.Run3DNA(checked.checkedinput['.pdb'])
 		checked.InputUpdate(".pdb",".out")
 		x3dna.RunEnerCalc(checked.checkedinput['.out'])
 		
-	"""Running Multistructure analysis"""
+	# Running Multistructure analysis
 	if paramdict['multistructure'] == True:
-		print "--> Performing multistructure analysis"
+		log.info("Performing multistructure analysis")
 		if len(checked.checkedinput['.out']) == 1:
-			print "    * WARNING: only 1 out file in input. Not performing multi-structure analysis"
+			log.info("    * WARNING: only 1 out file in input. Not performing multi-structure analysis")
 		elif len(checked.checkedinput['.out']) > 1:
-			print "    * Performing multistructure analysis on", len(checked.checkedinput['.out']), "parameter files" 
+			log.info("    * Performing multistructure analysis on {} parameter files".format(len(checked.checkedinput['.out'])))
 			multiout = MultiStructureAnalysis(checked.checkedinput['.out'])
 			multiout.ReadOutfiles()
 			multiout.ReadEnerfiles()
 			if not paramdict['master'] == None:
-				print "    * Using", paramdict['master'], "as sequence master file"
+				log.info("    * Using {} as sequence master file".format(paramdict['master']))
 				multiout.GetMasterSeq(paramdict['master'])
 			else:
 				multiout.GetBaseseq()
 				multiout.GetMasterSeq()
-			print "    * Writing nucleic-acid pairing information to the file 'napairing.stat'"
+			log.info("    * Writing nucleic-acid pairing information to the file 'napairing.stat'")
 			multiout.PairStats()
 			if paramdict['deformener'] == True:
-				print "    * Set sequence with the least number of unpairing/mispairing events as sequence master."	
+				log.info("    * Set sequence with the least number of unpairing/mispairing events as sequence master.")
 				multiout.AutoMaster()
-			print "    * Writing statistics to the file 'multiout.stat'"
+			log.info("    * Writing statistics to the file 'multiout.stat'")
 			multiout.WriteStats()
-			print "    * Writing the file 'selection.list' with the structures that match the master file"
+			log.info("    * Writing the file 'selection.list' with the structures that match the master file")
 			multiout.FileList()
 		else:		
-			print "    * WARNING: no par files in input, passing"
+			log.info("    * WARNING: no par files in input, passing")
 			
-	"""Rounding up"""
-	print "--> Finished X3DNAanalyze Core jobs"
+	# Rounding up
+	log.info("Finished X3DNAanalyze Core jobs")
 
-#================================================================================================================================#
-# 									PLUGIN SPECIFIC DEFINITIONS BELOW THIS LINE													 #
-#================================================================================================================================#
 
 class CommandlineOptionParser:
-	
 	"""Parses command line arguments using optparse"""
-	
+
 	def __init__(self):
-		
 		self.option_dict = {}
 		self.option_dict = self.CommandlineOptionParser()
 	
 	def CommandlineOptionParser(self):
-	
 		"""Parsing command line arguments"""
-	
-		usage = "usage: %prog" + USAGE
-		parser = OptionParser(usage)
-
+		parser = OptionParser()
 		parser.add_option( "-f", "--file", action="callback", callback=self.varargs, dest="inputfile", type="string", help="Supply pdb inputfile(s)")
 		parser.add_option( "-o", "--onlyinput", action="store_true", dest="onlyinput", default=False, help="Run only find_pair command, nothing parsed to analyze")
 		parser.add_option( "-s", "--singlehelix", action="store_true", dest="singlehelix", default=False, help="treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles (.outs)")
@@ -188,14 +177,12 @@ class CommandlineOptionParser:
 		return self.option_dict
 	
 	def GetFullPath(self, inputfiles):
-		
 		currdir = os.getcwd()
 		filelist = []
 		
 		for files in inputfiles:
 			path = os.path.join(currdir, files)
 			filelist.append(path)
-			
 		return filelist
 	
 	def GetFirstArgument(self, parser, shorta, longa):
@@ -212,9 +199,7 @@ class CommandlineOptionParser:
 		return first_arg
 			
 	def varargs(self, option, opt_str, value, parser):
-
 		"""Deals with variable list of command line arguments"""
-
 		value = []
 		rargs = parser.rargs
 		while rargs:
@@ -229,62 +214,53 @@ class CommandlineOptionParser:
 
 		setattr(parser.values, option.dest, value)
 
+
 class X3DNAanalyze:
-	
-	"""
-	Wrapper around the 3DNA analysis program. Program needs to be present in the ../DART/third-party/ directory.
+	"""Wrapper around the 3DNA analysis program.
+
+	Program needs to be present in the software directory.
 	""" 
 	
 	def __init__(self, paramdict=None):
-		
 		self.paramdict = paramdict
 	
 	def _ConstructOptionString(self):	
-
 		"""Constructing command line option string"""
-	        
 		option = []
-	        option.append('-tz')
-	        print "--> Running dna analysis with default option set:"
-	        print "    *(-t) read HETATM records"
-	        print "    *(-z) more detailed base-pairing information in the output"
-	        if self.paramdict['singlehelix'] ==  True:
-	        	option.append('s')
-	        	print "    *(-s) treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles"
-	        if self.paramdict['helregion'] ==  True:
-	        	option.append('d')
-	        	print "    *(-d) generate a separate output file for each helical region"
-	        if self.paramdict['allbasepairs'] == True:
-	        	option.append('p')
-	        	print "    *(-p) find all base-pairs and higher base associations"
-	        if self.paramdict['curvesinput'] == True:
-	        	option.append('c')
-	        	print "    *(-c) get Curves input for a duplex"
-	        
-	        self.optionstring = ''.join(option)
+		option.append('-tz')
+		log.info("Running dna analysis with default option set:")
+		log.info("    *(-t) read HETATM records")
+		log.info("    *(-z) more detailed base-pairing information in the output")
+		if self.paramdict['singlehelix'] ==  True:
+			option.append('s')
+			log.info("    *(-s) treat the whole structure as a continuous single helix. Useful for get all backbone torsion angles")
+		if self.paramdict['helregion'] ==  True:
+			option.append('d')
+			log.info("    *(-d) generate a separate output file for each helical region")
+		if self.paramdict['allbasepairs'] == True:
+			option.append('p')
+			log.info("    *(-p) find all base-pairs and higher base associations")
+		if self.paramdict['curvesinput'] == True:
+			option.append('c')
+			log.info("    *(-c) get Curves input for a duplex")
+		self.optionstring = ''.join(option)
 
 	def _CleanUp(self):
-	
 		"""Cleaning up"""
-		
-		print "--> Cleaning up temporary files"
+		log.info("Cleaning up temporary files")
 		trash = ['bestpairs.pdb','bp_order.dat','hel_regions.pdb','hstacking.pdb','poc_haxis.r3d','stacking.pdb','col_chains.scr','bp_step.alc',
 	        	 'col_helices.scr','ref_frames.dat','tmp_file','multiplets.pdb','mulbp.inp','mref_frames.dat','allpairs.pdb','bp_step.pdb']	
 		for n in trash:
 			if os.path.isfile(n):
-				os.remove(n)	
-			else:
-				pass
+				os.remove(n)
 
 	def Run3DNA(self, inputlist):
-
 		"""Running X3DNA analysis command"""
-		
 		self._ConstructOptionString()
 		
 		for files in inputlist:
 			if self.paramdict['onlyinput'] == True:
-				print "--> Only running the 3DNA find_pair command thus only generating input file for 3DNA analysis routine for the file:", files
+				log.info("Only running the 3DNA find_pair command thus only generating input file for 3DNA analysis routine for the file: {}".format(files))
 				basename,extension = os.path.splitext(files)
 				outfile = basename+".inp"
 				files2 = os.path.split(files)[-1]
@@ -293,9 +269,9 @@ class X3DNAanalyze:
 				   files = files2
 				cmd = "find_pair "+(self.optionstring)+" "+(files)+" "+(outfile)
 				output = commands.getoutput(cmd)
-				print output
+				log.info(output)
 			elif self.paramdict['curvesinput'] == True:
-				print "--> Getting Curves input for the file", files
+				log.info("Getting Curves input for the file {}".format(files))
 				basename,extension = os.path.splitext(files)
 				outfile = basename+".curves"
 				files2 = os.path.split(files)[-1]
@@ -305,7 +281,7 @@ class X3DNAanalyze:
 				cmd = "find_pair "+(self.optionstring)+" "+(files)+" "+(outfile)
 				os.system(cmd)
 			else:
-				print "--> Running both the 3DNA find_pair and analysis routine for the file:", files
+				log.info("Running both the 3DNA find_pair and analysis routine for the file: {}".format(files))
 				files2 = os.path.split(files)[-1]
 				if files != files2:
 				   os.system("ln -s %s" % files)
@@ -318,31 +294,28 @@ class X3DNAanalyze:
 				if os.path.isfile(n):
 					basename,extension = os.path.splitext(files)	 
 					ext = extensions[x3dna_files.index(n)]
-					FileRootRename(n,ext,basename)	   
-				else:
-					pass 
+					file_root_rename(n,ext,basename)	   
 		self._CleanUp()
 	
-	def RunEnerCalc(self,inputlist):
-	
+	def RunEnerCalc(self, inputlist):
 		for files in inputlist:
-			print "--> Calculating base-pair and base-pair step deformation energy for the file:", files
+			log.info("Calculating base-pair and base-pair step deformation energy for the file:".format(files))
 			outfile = os.path.splitext(files)[0]+".ener"
 			cmd1 = "EnergyPDNA.exe -s "+files+" >"+outfile
 			cmd2 = "EnergyPDNA.exe -b "+files+" >>"+outfile
 			os.system(cmd1)
 			os.system(cmd2)
 
-class MultiStructureAnalysis:
 
+class MultiStructureAnalysis:
 	"""
 	Performs a multistructure analysis by pulling all data from the individual runs together
-	and calculating various statistical parameters. The class destinguishes between structures
-	with a similar sequence and unique structures
+	and calculating various statistical parameters.
+
+	The class destinguishes between structures with a similar sequence and unique structures
 	"""
 	
 	def __init__(self, outfiles=None):
-		
 		self.outfiles = outfiles
 		self.origin = {}		
 		self.pairs = {}
@@ -373,13 +346,13 @@ class MultiStructureAnalysis:
 		self.zero = 0.0001
 	
 	def _ReadTable(self, linenr=None, outfile=None):	
-		
-		"""Reading all table lines of seleted table. Readstart = linenr stop reading at first 
-		   instance of *, newline or ~. Store data in tablelines and return"""
-		
+		"""Reading all table lines of seleted table.
+
+		Readstart = linenr stop reading at first instance of *, newline or ~. 
+		Store data in tablelines and return.
+		"""
 		tablelines = []
-		
-		count = linenr+1
+		count = linenr + 1
 		while count < len(outfile):
 			if outfile[count][0] == "*":
 				break
@@ -389,41 +362,36 @@ class MultiStructureAnalysis:
 				break
 			else:	
 				tablelines.append(outfile[count].split())
-			count = count+1
-	
+			count += 1
 		return tablelines
 	
-	def _SortTable(self,tablein=None,tableout=None,infile=None):
-		
-		"""Sorting tablelines from Readtable and extract colums. Temporary store in columns that 
-		   append to library (self) with filename as key"""
-		
+	def _SortTable(self, tablein=None, tableout=None, infile=None):
+		"""Sorting tablelines from Readtable and extract colums. 
+
+		Temporary store in columns that append to library (self) 
+		with filename as key.
+		"""
 		columns = []
-		
 		for n in range(len(tablein[0])):
 			columns.append([])
 			
 		for lines in tablein:
 			for n in range(len(lines)):
 				columns[n].append(lines[n])
-		
 		tableout[infile] = columns				
 	
 	def _MatchMaster(self):
-		
-		"""Match all read-in outfiles to the (supplied) master file"""
-		
+		"""Matches all read-in outfiles to the (supplied) master file"""
 		for structures in self.pairs:
 			if self.pairs[structures][1] == self.basesequence[self.chainid][0]:
 				self.selected.append(structures)
 			else:
 				self.rejected.append(structures)
 	
-	def _MatchPairs(self, linenr=None,outfile=None,infile=None):	
+	def _MatchPairs(self, linenr=None, outfile=None, infile=None):	
 		
 		tablelines = []
-		
-		count = linenr+1
+		count = linenr + 1
 		while count < len(outfile):
 			if outfile[count][0] == "*":
 				break
@@ -433,7 +401,7 @@ class MultiStructureAnalysis:
 				break
 			else:	
 				tablelines.append(outfile[count].split())
-			count = count+1
+			count += 1
 	
 		intnr = []
 		residnr1 = []
@@ -474,10 +442,8 @@ class MultiStructureAnalysis:
 		self.pairs[infile].append(residnr1)
 		self.pairs[infile].append(residnr2)
 		
-	def _AverageOnType(self,ntype,intable=None,selrow=0,selrange=None):
-		
-		"""Average values based on type"""
-		
+	def _AverageOnType(self, ntype, intable=None, selrow=0, selrange=None):
+		"""Averages values based on type"""
 		self.average.clear()
 		selection = {}
 		
@@ -498,14 +464,12 @@ class MultiStructureAnalysis:
 			if len(selection[n]) == 0:
 				del selection[n]
 				del self.average[n]
-			else:
-				pass
 		
 		for k in range(0,6):
 			for p in selection:
 				tmp = []
 				for n in selection[p]:
-					tmp.append(TransformDash(n[k]))
+					tmp.append(transform_dash(n[k]))
 				if len(tmp) == 1:
 					self.average[p].append(tmp[0])
 					self.average[p].append(float(0))
@@ -515,10 +479,8 @@ class MultiStructureAnalysis:
 					self.average[p].append(std(tmp))
 					self.average[p].append(len(tmp))
 		
-	def _AverageOnSequence(self,intable=None,selrange=None,basenr=None,seq=None):
-		
-		"""Average values based on sequence"""
-		
+	def _AverageOnSequence(self, intable=None, selrange=None, basenr=None, seq=None):
+		"""Averages values based on sequence"""
 		self.average.clear()
 		selection = {}
 		self.average['n'] = []
@@ -534,7 +496,8 @@ class MultiStructureAnalysis:
 				if not newp == False:
 					tmp = []
 					for n in selrange:
-						try:	#Try if data for given structure is present or not
+						try:
+							#Try if data for given structure is present or not
 							tmp.append(intable[structures][n][intable[structures][0].index(newp)])
 						except:
 							pass
@@ -547,7 +510,7 @@ class MultiStructureAnalysis:
 					if len(n) < len(selrange):
 						pass
 					else:
-						tmp.append(TransformDash(n[k]))
+						tmp.append(transform_dash(n[k]))
 				if len(tmp) == 0:
 					pass
 				elif len(tmp) == 1:
@@ -652,7 +615,7 @@ class MultiStructureAnalysis:
 					if len(n) < 4:
 						pass
 					else:
-						tmp.append(TransformDash(n[k]))
+						tmp.append(transform_dash(n[k]))
 				if len(tmp) == 0:
 					pass
 				elif len(tmp) == 1:
@@ -763,8 +726,8 @@ class MultiStructureAnalysis:
 		
 		self.selected = selected
 		
-		print ("    * Selecting structures based on minimum unpairing/mispairing events")
-		print ("    * %s structures match to a minimum of %s unpairing/mispairing events" % (len(selected),maxpair[1])) 
+		log.info("    * Selecting structures based on minimum unpairing/mispairing events")
+		log.info("    * {} structures match to a minimum of {} unpairing/mispairing events".format(len(selected),maxpair[1]))
 		
 	def ReadOutfiles(self, debug=0):
 		
@@ -875,7 +838,7 @@ class MultiStructureAnalysis:
 					except:
 						pass	
 				linecount += 1
-        			countstart.append(linecount)			
+				countstart.append(linecount)			
 	
 	def ReadEnerfiles(self):
 	
@@ -1025,7 +988,7 @@ class MultiStructureAnalysis:
 		
 		if not len(self.basemoltype) == 0:
 			chains = self.basemoltype.keys()
-			for chain in xrange(len(chains)):
+			for chain in range(len(chains)):
 				try:
 					outfile.write('Found chain: %s of type %s\n' % (chains[chain],self.basemoltype[chains[chain]]))
 					if self.basemoltype[chains[chain]] == 'PROT':
@@ -1450,25 +1413,17 @@ class MultiStructureAnalysis:
 		
 		outfile.close()
 	
-if __name__ == '__main__':
-
-	"""Running this plugin from the command line"""
-	
-	"""Import command line specific modules"""
-	from optparse import *
-	
+if __name__ == '__main__':	
 	"""Setting up parameter dictionary"""
 	paramdict = CommandlineOptionParser().option_dict
 	
 	"""Check for input"""
 	if paramdict['input'] == None:
-		print "    * Please supply pdb file using option -f or use option -h/--help for usage"
-		sys.exit(0)
+		log.info("    * Please supply pdb file using option -f or use option -h/--help for usage")
+		raise SystemExit
 	else:
 		inputlist = paramdict['input']
 	
 	"""Running plugin main functions"""
 	PluginCore(paramdict, inputlist)
-	sys.exit(0)
-
-	
+	raise SystemExit
