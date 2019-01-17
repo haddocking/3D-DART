@@ -1,13 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-USAGE= """
-==========================================================================================
-
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center for 
-					Biomolecular Research, Utrecht university, The Netherlands.
-Copyright (C):		2006 (DART project)
-DART version:		1.2 (25-11-2008)
-DART plugin: 		NABendAnalyze.py
+"""
 Input:				3DNA PAR files or files containing a list of files. Any of the 
 					allowed options, any order or combined.
 Output:				.bend and/or a multibend.stat file.			
@@ -20,34 +13,41 @@ Plugin function:	This plugin calculates the global bend angle of nucleic-acid
 					the reference base-pair to be used. Additionaly the script can 
 					calculate statistical values for all bend parameters for an 
 					ensamble of structures.
-Dependencies:		Standard python2.3 or higher modules
 Examples:			NABendAnalyze -f *.out
-					NABendAnalyze -mf selection.list	
-
-==========================================================================================
+					NABendAnalyze -mf selection.list
 """
 
-"""Import modules"""
-import os, sys, math, re, operator
+
+import os
+import sys
+import math
+import re
+import operator
+from optparse import OptionParser
+import numpy as np
 from copy import deepcopy
-from numpy import *
 from time import ctime
 
-"""Setting pythonpath variables if run from the command line"""
+# Setting pythonpath variables if run from the command line
 base, dirs = os.path.split(os.path.dirname(os.path.join(os.getcwd(), __file__)))
 
-if base in sys.path: pass
-else: sys.path.append(base)
+if base not in sys.path:
+	sys.path.append(base)
 
-"""Import DART specific modules"""
-from QueryPDB import GetSequence, NAsummery
-from PDBeditor import PDBeditor
-from system.NAfunctionLib import ConvertSeq, UnitvecToDegree, AccTwist, Angle
-from system.IOlib import InputOutputControl
-from system.Constants import *
+# Import DART specific modules
+from dart.plugins.QueryPDB import GetSequence, NAsummery
+from dart.plugins.PDBeditor import PDBeditor
+from dart.system.nucleic import ConvertSeq, UnitvecToDegree, AccTwist, Angle
+from dart.system.iolib import InputOutputControl
+
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("NABendAnalyze")
+
 
 def PluginXML():
-	PluginXML = """ 
+	xml = """ 
 <metadata>
  <name>Nucleic Acid global bend analysis</name>
  <input type="filetype">.out</input>
@@ -61,20 +61,19 @@ def PluginXML():
  <option type="multiana" form="checkbox" text="Perform multibend analysis">True</option>
  <option type="verbose" form="checkbox" text="Verbose output">False</option>
 </parameters>"""
-	
-	return PluginXML
+	return xml
+
 
 def PluginCore(paramdict, inputlist):
-	
-	"""Checking inputlist"""
+	# Checking inputlist
 	checked = InputOutputControl()
 	checked.CheckInput(inputlist)
 	
-	print "--> Performing Global nucleic acid bend angle analysis"
+	log.info("Performing Global nucleic acid bend angle analysis")
 	if paramdict['refbp']:
-		print "    * Using predefined reference base-pair:", paramdict['refbp']
+		log.info("    * Using predefined reference base-pair: {}".format(paramdict['refbp']))
 	if paramdict['zone']:
-		print("    * Using predefined zone over whitch to calculate the bend angle: %s" % paramdict['zone'])
+		log.info("    * Using predefined zone over whitch to calculate the bend angle: {}".format(paramdict['zone']))
 	
 	bend = MeasureBend(refbp=paramdict['refbp'], zone=paramdict['zone'], verbose=paramdict['verbose'])	
 
@@ -89,29 +88,21 @@ def PluginCore(paramdict, inputlist):
 		try:
 			bend.ReadParfiles(files=checked.checkedinput['.par'])
 			bend.CalcGlobalBend(multiana=False)
-		except e:
-			print "    * ERROR: No valid input found: {}".format(e)
-			sys.exit(0)
-	
-#================================================================================================================================#
-# 										PLUGIN SPECIFIC DEFINITIONS BELOW THIS LINE												 #
-#================================================================================================================================#
+		except Exception as err:
+			log.error("No valid input found: {}".format(err))
+			raise SystemExit
+
 
 class CommandlineOptionParser:
-	
 	"""Parses command line arguments using optparse"""
-	
+
 	def __init__(self):
-		
 		self.option_dict = {}
 		self.option_dict = self.CommandlineOptionParser()
 	
 	def CommandlineOptionParser(self):
-	
 		"""Parsing command line arguments"""
-	
-		usage = "usage: %prog" + USAGE
-		parser = OptionParser(usage)
+		parser = OptionParser()
 
 		parser.add_option( "-f", "--file", action="callback", callback=self.varargs, dest="inputfile", type="string", help="Supply .par or .out inputfile(s). In case of .par no multianalysis")
 		parser.add_option( "-r", "--refbp", action="store", dest="refbp", type="float", help="Define the reference base-pair over which to calculate the bend angle")
@@ -142,33 +133,25 @@ class CommandlineOptionParser:
 		return self.option_dict
 	
 	def GetFullPath(self, inputfiles):
-		
 		currdir = os.getcwd()
 		filelist = []
-		
 		for files in inputfiles:
 			path = os.path.join(currdir, files)
 			filelist.append(path)
-			
 		return filelist
 	
 	def GetFirstArgument(self, parser, shorta, longa):
-
 		"""HACK, optparse has difficulties in variable argument lists. The varargs definition solves this but never reports the first 
 		   argument of the list. This definition hacks this issue"""
-
 		parser.add_option( shorta, longa, action="store", dest="temp", type="string", help="Execute custom workflow assembled on the command line. You can execute a single plugin by typing '-p pluginname' or a sequence of plugins by typing '-p plugin1,plugin2...'")
 
 		(options, args) = parser.parse_args()
 		first_arg = options.temp
 		parser.remove_option(shorta)
-		
 		return first_arg
 			
 	def varargs(self, option, opt_str, value, parser):
-
 		"""Deals with variable list of command line arguments"""
-
 		value = []
 		rargs = parser.rargs
 		while rargs:
@@ -180,15 +163,13 @@ class CommandlineOptionParser:
 		    else:
         		value.append(arg)
         		del rargs[0]
-
 		setattr(parser.values, option.dest, value)
 
-class MeasureBend:
 
-	"""Measure the global bend angle of irregular nucleic acids"""
+class MeasureBend:
+	"""Measures the global bend angle of irregular nucleic acids"""
 	
 	def __init__(self, refbp=None, zone=None, verbose=False):
-		
 		self.refbp = refbp		#user supplied or auto-set
 		self.zone = zone		#user supplied or auto-set
 		self.verbose = verbose
@@ -208,75 +189,62 @@ class MeasureBend:
 		self.basesequence = {}
 	
 	def _RefBp(self, sequence):
-		
-		"""Determine reference base-pair if none is supplied. By default choose middel of zone"""
+		"""Determines reference base-pair if none is supplied. By default choose middel of zone"""
 		
 		if self.refbp == None:
-			
 			corr_zone = self._Zone(sequence)
 			nrbp = self._NrBp(sequence)
-			
 			half = float(nrbp)/2
-			print "    * No reference base-pair for bend calculation supplied. Set to middle of zone:",  (corr_zone[0]-1) + int(half)
-				
+			log.info("    * No reference base-pair for bend calculation supplied. Set to middle of zone: {}{}".format((corr_zone[0]-1), int(half)))
 			return (corr_zone[0]-1) + int(half)
 		else:
 			corr_zone = self._Zone(sequence)
 			if self.refbp > corr_zone[1]:
-				print "    * WARNING: supplied reference bp larger that sequence length, refbp set to middle of sequence"
+				log.warning("Supplied reference bp larger that sequence length, refbp set to middle of sequence")
 				self.refbp = None
 				self._RefBp(sequence)
 			else:
 				return self.refbp-1
 		
 	def _NrBp(self, sequence):
-		
-		"""Determine number of base-pairs in sequence. If zone=None then full sequence is used"""
-		
+		"""Determines number of base-pairs in sequence. If zone=None then full sequence is used"""
 		corr_zone = self._Zone(sequence)
 		return ((corr_zone[1])+1) - (corr_zone[0])
 	
 	def _Zone(self, sequence):
-	
-		"""Check zone, if zone=None then full sequence is returned"""
-		
+		"""Checks zone, if zone=None then full sequence is returned"""
 		if self.zone == None:
 			return [1, sequence]
 		else:
 			try:	
 				corr_zone = self.zone.split(',')
 				if int(corr_zone[0]) > sequence or int(corr_zone[1]) > sequence:
-					print "    * WARNING: one or more base-pairs in supplied zone are outside the length of the sequence, zone set to full sequence length"
+					log.warning("One or more base-pairs in supplied zone are outside the length of the sequence, zone set to full sequence length")
 					return [1, sequence]
 				else:	
 					return [int(corr_zone[0]), int(corr_zone[1])]
 			except:
 				corr_zone = self.zone.split('-')
 				if int(corr_zone[0]) > sequence or int(corr_zone[1]) > sequence:
-					print "    * WARNING: one or more base-pairs in supplied zone are outside the length of the sequence, zone set to full sequence length"
+					log.warning("One or more base-pairs in supplied zone are outside the length of the sequence, zone set to full sequence length")
 					return [1, sequence]
 				else:	
 					return [int(corr_zone[0]), int(corr_zone[1])]
 	
-	def _GlobRollTilt(self, tilt, roll):		
-	
-		"""Calculate global roll and tilt"""
-		
+	def _GlobRollTilt(self, tilt, roll):
+		"""Calculates global roll and tilt"""
 		base = int(self.corr_refbp)					
 		frup = self.corr_refbp - base
 		frdw = 1-frup
 		p = math.pi/180
 		
 		if frup == 0:
-			tiltarr = array(tilt)					
-    			rollarr = array(roll)	
-   			ctwistarr = array(self.ctwist)
-
-			gltiltarr =  (tiltarr*cos(ctwistarr*p))+(rollarr*sin(ctwistarr*p))
-    			glrollarr = (tiltarr*-sin(ctwistarr*p))+(rollarr*cos(ctwistarr*p))
-
-			return gltiltarr.tolist(), glrollarr.tolist()		
-
+			tiltarr = np.array(tilt)
+			rollarr = np.array(roll)	
+			ctwistarr = np.array(self.ctwist)
+			gltiltarr = (tiltarr*cos(ctwistarr*p))+(rollarr*sin(ctwistarr*p))
+			glrollarr = (tiltarr*-sin(ctwistarr*p))+(rollarr*cos(ctwistarr*p))
+			return gltiltarr.tolist(), glrollarr.tolist()
 		else:
 			tilt.insert(base,(tilt[base]))
 			tilt[base] = tilt[base]/2
@@ -286,27 +254,26 @@ class MeasureBend:
 			roll[base] = roll[base]/2
 			roll[base+1] = roll[base+1]/2
 			
-    			tiltarr = array(tilt)					
-    			rollarr = array(roll)	
-   			ctwistarr = array(self.ctwist)
+			tiltarr = np.array(tilt)					
+			rollarr = np.array(roll)	
+			ctwistarr = np.array(self.ctwist)
 			
 			gltiltarr =  (tiltarr*cos(ctwistarr*p))+(rollarr*sin(ctwistarr*p))
-    			glrollarr = (tiltarr*-sin(ctwistarr*p))+(rollarr*cos(ctwistarr*p))
+			glrollarr = (tiltarr*-sin(ctwistarr*p))+(rollarr*cos(ctwistarr*p))
 			
-			self.corr_zone[1] = self.corr_zone[1]+1 #correction for duplicated base-pair
-			
+			# Correction for duplicated base-pair
+			self.corr_zone[1] = self.corr_zone[1]+1
 			return gltiltarr.tolist(), glrollarr.tolist()	
 	
-	def _ListFraction(self, v1,v2,v3):			#Calculation of angle fractions
-		a = array(v1)
-		b = array(v2)
-		c = array(v3)
+	def _ListFraction(self, v1,v2,v3):
+		"""Calculation of angle fractions"""
+		a = np.array(v1)
+		b = np.array(v2)
+		c = np.array(v3)
 		d = (power(v2,2))/(power(v1,2))
 		e = (power(v3,2))/(power(v1,2))
-
 		f = d.tolist()
 		g = e.tolist()
-
 		return f,g
 	
 	def _ZoneCorrect(self, inlist):
@@ -322,8 +289,7 @@ class MeasureBend:
 		
 		return nul_list
 	
-	def _ConvertSeq2(self,inlist):
-		
+	def _ConvertSeq2(self, inlist):
 		dupl = deepcopy(inlist)
 		full = len(self.basechainlib[self.chainid][0])
 		count = 1
@@ -336,7 +302,7 @@ class MeasureBend:
 				dupl[2].insert(count,"X")
 				dupl[3].insert(count,"X")
 				dupl[4].insert(count,"X")
-			count = count +1	
+			count += 1
 		
 		newlist = []
 		for na in range(len(dupl[1])):
@@ -370,11 +336,9 @@ class MeasureBend:
 				count += 1
 			except:
 				pass
-	
 		return [newlist, newlist2]
 	
-	def _CalculateCore(self, files):
-		
+	def _CalculateCore(self, files):	
 		"""Get reference basepair"""
 		self.corr_refbp = self._RefBp(len(self.bpstep[files][0]))
 		self.corr_zone = self._Zone(len(self.bpstep[files][0]))
@@ -445,7 +409,6 @@ class MeasureBend:
 			self.emtylist[base+1] = 'x' 
 	
 	def _MultiCalculate(self):
-		
 		"""Get reference basepair"""
 		self.corr_refbp = self._RefBp(len(self.basesequence[self.chainid]))
 		self.corr_zone = self._Zone(len(self.basesequence[self.chainid]))
@@ -480,19 +443,19 @@ class MeasureBend:
 				sttwist.append(float(0))	
 		
 		rolllist = []
-		rolllist.append(array(roll))
-		rolllist.append(array(roll)+array(stroll))
-		rolllist.append(array(roll)-array(stroll))
+		rolllist.append(np.array(roll))
+		rolllist.append(np.array(roll)+np.array(stroll))
+		rolllist.append(np.array(roll)-np.array(stroll))
 		
 		tiltlist = []
-		tiltlist.append(array(tilt))
-		tiltlist.append(array(tilt)+array(sttilt))
-		tiltlist.append(array(tilt)-array(sttilt))
+		tiltlist.append(np.array(tilt))
+		tiltlist.append(np.array(tilt)+np.array(sttilt))
+		tiltlist.append(np.array(tilt)-np.array(sttilt))
 		
 		twistlist = []
-		twistlist.append(array(twist))
-		twistlist.append(array(twist)+array(sttwist))
-		twistlist.append(array(twist)-array(sttwist))
+		twistlist.append(np.array(twist))
+		twistlist.append(np.array(twist)+np.array(sttwist))
+		twistlist.append(np.array(twist)-np.array(sttwist))
 		
 		"""Calculate accumulated twist, global roll and tilt, base-pair angle and angle orientation at each step and 
 		   fraction roll/tilt"""
@@ -527,13 +490,13 @@ class MeasureBend:
 			self.orient.append(tmp)	
 		
 		"""Supstract upper and lower limits to obtain interval"""
-		self.ctwist = self.ctwist[0],(abs(array(self.ctwist[1])-array(self.ctwist[2]))).tolist()
-		self.gltilt = self.gltilt[0],(abs(array(self.gltilt[1])-array(self.gltilt[2]))).tolist()
-		self.glroll = self.glroll[0],(abs(array(self.glroll[1])-array(self.glroll[2]))).tolist()
-		self.bpangle = self.bpangle[0],(abs(array(self.bpangle[1])-array(self.bpangle[2]))).tolist()
-		self.orient = self.orient[0],(abs(array(self.orient[1])-array(self.orient[2]))).tolist()
-		self.ftilt = self.ftilt[0],(abs(array(self.ftilt[1])-array(self.ftilt[2]))).tolist()
-		self.froll = self.froll[0],(abs(array(self.froll[1])-array(self.froll[2]))).tolist()
+		self.ctwist = self.ctwist[0],(abs(np.array(self.ctwist[1])-np.array(self.ctwist[2]))).tolist()
+		self.gltilt = self.gltilt[0],(abs(np.array(self.gltilt[1])-np.array(self.gltilt[2]))).tolist()
+		self.glroll = self.glroll[0],(abs(np.array(self.glroll[1])-np.array(self.glroll[2]))).tolist()
+		self.bpangle = self.bpangle[0],(abs(np.array(self.bpangle[1])-np.array(self.bpangle[2]))).tolist()
+		self.orient = self.orient[0],(abs(np.array(self.orient[1])-np.array(self.orient[2]))).tolist()
+		self.ftilt = self.ftilt[0],(abs(np.array(self.ftilt[1])-np.array(self.ftilt[2]))).tolist()
+		self.froll = self.froll[0],(abs(np.array(self.froll[1])-np.array(self.froll[2]))).tolist()
 		
 		"""Correct above calculated values for the selected zone. return value 0 for resids outside zone"""
 		self.ctwist = self._ZoneCorrect(self.ctwist[0]),self._ZoneCorrect(self.ctwist[1])  
@@ -602,15 +565,12 @@ class MeasureBend:
 			self.freq = freq			
 		
 	def _WriteMultiBend(self):
-		
-		"""Print all data to file"""
-		
-		print("    * Writing Multi-bend analysis data to file: multibend.stat")
-		
-		if self.verbose == True:
+		"""Prints all data to file"""
+		log.info("    * Writing Multi-bend analysis data to file: multibend.stat")
+		if self.verbose:
 			outfile = sys.stdout 
 		else:
-			outfile = file('multibend.stat','w')	
+			outfile = open('multibend.stat','w')	
 		
 		outfile.write("**********************************************************************************************************************************************************************\n")
 		outfile.write("Statistical info for the global bend analysis of %i files\n" % len(self.pairs))	
@@ -651,15 +611,13 @@ class MeasureBend:
 			outfile.close()
 		
 	def _WriteBendFile(self, files):	
+		"""Prints all data to file"""
+		log.info("    * Writing global bend analysis data to file: {}".format(os.path.splitext(os.path.basename(files))[0]+'.bend'))
 		
-		"""Print all data to file"""
-		
-		print("    * Writing global bend analysis data to file: %s" % os.path.splitext(os.path.basename(files))[0]+'.bend')
-		
-		if self.verbose == True:
+		if self.verbose:
 			outfile = sys.stdout 
 		else:
-			outfile = file(os.path.splitext(os.path.basename(files))[0]+'.bend','w')
+			outfile = open(os.path.splitext(os.path.basename(files))[0]+'.bend','w')
 		
 		outfile.write("**************************************************************************************************************\n")	
 		outfile.write("Filename: %s\n" % os.path.basename(os.path.splitext(files)[0]+'.pdb'))
@@ -673,8 +631,8 @@ class MeasureBend:
 		outfile.write("bp-step angle = bending angle (deg.) at each base-pair step.\n") 
 		outfile.write("orient angle  = orientation of the bend angle relative to the reference base-pair in Euler-angle\n")
 		outfile.write("                space (from 0 to 360 deg.)\n")
-                outfile.write("global tilt   = the value of Tilt (deg.) in the global reference frame.\n")
-                outfile.write("global roll   = the value of Roll (deg.) in the global reference frame.\n")  
+		outfile.write("global tilt   = the value of Tilt (deg.) in the global reference frame.\n")
+		outfile.write("global roll   = the value of Roll (deg.) in the global reference frame.\n")  
 		outfile.write("Acc. twist    = accumulated twist values (deg.) above and below the reference base-pair.\n")
 		outfile.write("x	     = If the reference plane is located between two basepairs, one base-pair is\n") 
 		outfile.write("		       duplicated for the calculation (two x's). If the reference plane coincides with\n") 
@@ -694,8 +652,7 @@ class MeasureBend:
 		if self.verbose == False:
 			outfile.close()
 	
-	def _MatchPairs(self,tablein=None,tableout=None,infile=None):	
-		
+	def _MatchPairs(self, tablein=None, tableout=None, infile=None):
 		intnr = []
 		residnr1 = []
 		residnr2 = []
@@ -715,16 +672,19 @@ class MeasureBend:
 				else:
 					tmp2.append(n)		
 			residnr1.append(int(splitter2.split(tmp2[1])[0]))
-			try:													#Three letter NA-code
+			try:
+				#Three letter NA-code
 				residnr2.append(int(splitter2.split(tmp2[2])[0]))
 				resid1.append(splitter3.split(tmp2[1])[1])
 				resid2.append(splitter3.split(tmp2[1])[3])
-			except:													#One letter NA-code	
+			except:
+				#One letter NA-code	
 				residnr2.append(int(splitter2.split(tmp2[4])[0]))
 				resid1.append(splitter3.split(tmp2[2])[0])
-			 	resid2.append(splitter3.split(tmp2[3])[0])
-		#TODO Distinction between OSX and Linux version (tmp2[0][1] for OSX)	
-		self.chainid = tmp2[0][0]	#extract chainid once from .out file
+				resid2.append(splitter3.split(tmp2[3])[0])
+		#TODO Distinction between OSX and Linux version (tmp2[0][1] for OSX)
+		#extract chainid once from .out file
+		self.chainid = tmp2[0][0]	
 		tableout[infile] = []
 		tableout[infile].append(intnr)
 		tableout[infile].append(resid1)
@@ -733,9 +693,7 @@ class MeasureBend:
 		tableout[infile].append(residnr2)	
 	
 	def _StepDevide(self):
-	
-		"""Devide all values for roll, tilt and twist according to the base-pair step number in full sequence"""
-		
+		"""Devides all values for roll, tilt and twist according to the base-pair step number in full sequence"""
 		for resid in range(len(self.basesequence[self.chainid])):
 			self.roll[resid] = []
 			self.tilt[resid] = []
@@ -752,12 +710,12 @@ class MeasureBend:
 				self.freq[pairs] = len(self.roll[pairs])
 		
 	def _ReadTable(self, linenr=None, outfile=None):	
-		
-		"""Reading all table lines of seleted table. Readstart = linenr stop reading at first 
-		   instance of *, newline or ~. Store data in tablelines and return"""
-		
+		"""Reading all table lines of seleted table. 
+
+		Readstart = linenr stop reading at first instance of *, newline or ~. 
+		Store data in tablelines and return
+		"""
 		tablelines = []
-		
 		count = linenr+1
 		while count < len(outfile):
 			if outfile[count][0] == "*":
@@ -769,23 +727,19 @@ class MeasureBend:
 			else:	
 				tablelines.append(outfile[count].split())
 			count = count+1
-	
 		return tablelines
 	
-	def _FormatFloat(self,number):
-		
+	def _FormatFloat(self, number):
 		if float(number) == 0.0 or float(number) == -0.0:
 			return float(0.0001)
 		else:
 			return float(number)	
 	
 	def _SortTable(self,tablein=None,tableout=None,infile=None):
-		
 		"""Sorting tablelines from Readtable and extract colums. Temporary store in columns that 
-		   append to library (self) with filename as key"""
-		
+		   append to library (self) with filename as key
+		"""
 		columns = []
-		
 		for n in range(5):
 			columns.append([])
 			
@@ -802,14 +756,12 @@ class MeasureBend:
 		tableout[infile] = columns		
 	
 	def ReadOutfiles(self,files):
-	
 		"""Parses 3DNA .out file and extracts roll, tilt and twist values as well as sequence information"""
-	
 		rmsd = re.compile("RMSD of the bases")
 		bpstep = re.compile("step       Shift     Slide      Rise      Tilt      Roll     Twist")
 		
 		for infile in files:
-			print("    * Running global bend analysis on file: %s" % os.path.basename(infile))
+			log.info("    * Running global bend analysis on file: {}".format(os.path.basename(infile)))
 			readfile = file(infile,'r')
 			lines = readfile.readlines()	
 			linecount = 1
@@ -825,20 +777,19 @@ class MeasureBend:
 					tablelines = self._ReadTable(linenr=len(countstart),outfile=lines)
 					self._SortTable(tablein=tablelines,tableout=self.bpstep,infile=infile)	
 				linecount += 1
-        			countstart.append(linecount)	
+				countstart.append(linecount)	
 		
-	def ReadParfiles(self,files):
-		
+	def ReadParfiles(self, files):
 		"""Parses 3DNA .par files and extracts roll, tilt and twist values as well as sequence information.
-		   Values in the parameter file only reflects the paired base-paires. Partly unpaired structures 
-		   will result in missing base-pairs in the parameter file. The native sequence cannot be extracted
-		   and therefor the bend calculation using .par files cannot be run in multianalysis mode
+
+		Values in the parameter file only reflects the paired base-paires. Partly unpaired structures 
+		will result in missing base-pairs in the parameter file. The native sequence cannot be extracted
+		and therefor the bend calculation using .par files cannot be run in multianalysis mode
 		"""
-		
 		zero = float(0.0001)
 		
 		for infile in files:
-			print("    * Running global bend analysis on file: %s" % os.path.basename(infile))
+			log.info("    * Running global bend analysis on file: {}".format(os.path.basename(infile)))
 			self.bpstep[infile] = []
 			self.pairs[infile] = []
 			readfile = file(infile, 'r')
@@ -864,21 +815,17 @@ class MeasureBend:
 				roll.append(self._FormatFloat(value[11]))
 				twist.append(self._FormatFloat(value[12]))
 				rescount += 1
-				
 			self.bpstep[infile].append(resnr)
 			self.bpstep[infile].append(sequence)
 			self.bpstep[infile].append(tilt)
 			self.bpstep[infile].append(roll)
 			self.bpstep[infile].append(twist)
 		
-	def CalcGlobalBend(self,multiana):
-	
+	def CalcGlobalBend(self, multiana):
 		"""Control module"""
-		
 		for files in self.pairs:
 			self._CalculateCore(files)	
 			self._WriteBendFile(files)
-		
 		if multiana == True:
 			for files in self.pairs:
 				self.pairs[files] = self._ConvertSeq2(self.pairs[files])
@@ -887,7 +834,6 @@ class MeasureBend:
 			self._WriteMultiBend()
 	
 	def GetBaseseq(self):
-			
 		"""Get the base sequence and pairing as it should be in a fully paired structure (input)
 		   Calls GetSequence and NAsummery class from QueryPDB plugin. The output must be of a
 		   fixed format: the chains in chainlib and sequence in pairs must can only have 2 lists
@@ -912,21 +858,16 @@ class MeasureBend:
 			
 if __name__ == '__main__':
 	
-	"""Running this plugin from the command line"""
-	
-	"""Import command line specific modules"""
-	from optparse import *
-	
-	"""Setting up parameter dictionary"""
+	# Setting up parameter dictionary
 	paramdict = CommandlineOptionParser().option_dict
 	
-	"""Check for input"""
+	# Check for input
 	if paramdict['input'] == None:
-		print "    * Please supply pdb file using option -f or use option -h/--help for usage"
-		sys.exit(0)
+		log.info("    * Please supply pdb file using option -f or use option -h/--help for usage")
+		raise SystemExit
 	else:
 		inputlist = paramdict['input']
 	
-	"""Running plugin main functions"""
+	# Running plugin main functions
 	PluginCore(paramdict, inputlist)
-	sys.exit(0)
+	raise SystemExit

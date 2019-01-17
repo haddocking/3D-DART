@@ -102,7 +102,7 @@ def PluginCore(paramdict, inputlist):
 	if paramdict['multistructure'] == True:
 		log.info("Performing multistructure analysis")
 		if len(checked.checkedinput['.out']) == 1:
-			log.info("    * WARNING: only 1 out file in input. Not performing multi-structure analysis")
+			log.warning("Only 1 out file in input. Not performing multi-structure analysis")
 		elif len(checked.checkedinput['.out']) > 1:
 			log.info("    * Performing multistructure analysis on {} parameter files".format(len(checked.checkedinput['.out'])))
 			multiout = MultiStructureAnalysis(checked.checkedinput['.out'])
@@ -124,7 +124,7 @@ def PluginCore(paramdict, inputlist):
 			log.info("    * Writing the file 'selection.list' with the structures that match the master file")
 			multiout.FileList()
 		else:		
-			log.info("    * WARNING: no par files in input, passing")
+			log.warning("No par files in input, passing")
 			
 	# Rounding up
 	log.info("Finished X3DNAanalyze Core jobs")
@@ -750,7 +750,7 @@ class MultiStructureAnalysis:
 		strand2 = re.compile("Strand II")
 		
 		for files in self.outfiles:
-			readfile = file(files,'r')
+			readfile = open(files,'r')
 			lines = readfile.readlines()	
 			linecount = 1
 			countstart = []
@@ -850,7 +850,7 @@ class MultiStructureAnalysis:
 			steplines = []
 			pairlines = []
 			enefile = os.path.splitext(files)[0]+'.ener'
-			readfile = file(enefile,'r')
+			readfile = open(enefile,'r')
 			lines = readfile.readlines()
 			
 			tlines = len(lines)
@@ -921,7 +921,7 @@ class MultiStructureAnalysis:
 		master = os.path.splitext(os.path.basename(self.outfiles[0]))[0]+'.pdb'
 		
 		pdb = PDBeditor()
-		pdb.ReadPDB(master)	
+		pdb.read_pdb(master)	
 		xml = pdb.PDB2XML().xml()
 		
 		sequence = GetSequence()
@@ -1367,40 +1367,35 @@ class MultiStructureAnalysis:
 		outfile.close()	
 	
 	def PairStats(self):
-		
 		"""Writing nucleic acid pairing information to the file 'napairing.stat'"""
-		
-		outfile = file('napairing.stat','w')
-		
-		outfile.write('\n*************************************************************************************************************************\n')
-		outfile.write('Nucleic acid (un)-pairing for %i structures\n' % (len(self.selected)+len(self.rejected)))
-		outfile.write('Time and date: %s\n' % ctime())
-		outfile.write('Sequences are compared to the full length paired sequence or the supplied master file. Unpaired\n') 
-		outfile.write('or mispaired bases are shown with an X. Consult the associated .out file(s) for more information about the nature of the\n')
-		outfile.write('unpairing or mispairing. Structures are sorted from low to high number of unpairing/mispatching events\n') 
-		outfile.write('*************************************************************************************************************************\n') 
-		 
-		self._UnpairingReport()
-		valuesort = sorted(self.pairsort.items(), key=itemgetter(1))
-		
-		for key in valuesort:
-			outfile.write("\nStructure %s, total bp energy %0.2f, total bp-step energy %0.2f, unpairing/mispairing %i:\n" % 
-			(os.path.basename(key[0]),self.bpenersum[key[0]],self.bpstepenersum[key[0]],key[1]))
-			outfile.write(" 5'-")	
-			for n in self.basesequence[self.chainid][0]:
-				outfile.write(' %s' % n)
-			outfile.write(" -3'\n")
-			outfile.write("    ")	
-			for n in self.average[key[0]]:
-				outfile.write('%s' % n)
-			outfile.write("\n 5'-")	
-			for n in self.basesequence[self.chainid][1]:
-				outfile.write(' %s' % n)		
-			outfile.write(" -3'\n")	
-		
-		outfile.write('\n*************************************************************************************************************************\n')
-		
-		outfile.close()
+		with open('napairing.stat','w') as outfile:
+			outfile.write('\n*************************************************************************************************************************\n')
+			outfile.write('Nucleic acid (un)-pairing for %i structures\n' % (len(self.selected)+len(self.rejected)))
+			outfile.write('Time and date: %s\n' % ctime())
+			outfile.write('Sequences are compared to the full length paired sequence or the supplied master file. Unpaired\n') 
+			outfile.write('or mispaired bases are shown with an X. Consult the associated .out file(s) for more information about the nature of the\n')
+			outfile.write('unpairing or mispairing. Structures are sorted from low to high number of unpairing/mispatching events\n') 
+			outfile.write('*************************************************************************************************************************\n') 
+			 
+			self._UnpairingReport()
+			valuesort = sorted(self.pairsort.items(), key=itemgetter(1))
+			
+			for key in valuesort:
+				outfile.write("\nStructure %s, total bp energy %0.2f, total bp-step energy %0.2f, unpairing/mispairing %i:\n" % 
+				(os.path.basename(key[0]),self.bpenersum[key[0]],self.bpstepenersum[key[0]],key[1]))
+				outfile.write(" 5'-")	
+				for n in self.basesequence[self.chainid][0]:
+					outfile.write(' %s' % n)
+				outfile.write(" -3'\n")
+				outfile.write("    ")	
+				for n in self.average[key[0]]:
+					outfile.write('%s' % n)
+				outfile.write("\n 5'-")	
+				for n in self.basesequence[self.chainid][1]:
+					outfile.write(' %s' % n)		
+				outfile.write(" -3'\n")	
+			
+			outfile.write('\n*************************************************************************************************************************\n')
 		
 	def FileList(self):
 		

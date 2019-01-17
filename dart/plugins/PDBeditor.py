@@ -578,7 +578,7 @@ class PDBeditor:
                     resid1 = DNA1LETTER[THREELETTER.index(resid3.upper())]
                     seq1.append(resid1)
             except ValueError:
-                log.warning("WARNING: no match for residue: {}".format(resid3))
+                log.warning("No match for residue: {}".format(resid3))
                 seq1.append(resid3.upper())
 
         if len(seq1) == len(self.resname):

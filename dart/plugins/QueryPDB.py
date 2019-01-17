@@ -19,6 +19,7 @@ if base not in sys.path:
 from dart.plugins.PDBeditor import PDBeditor
 from dart.system.xpath import Xpath
 from dart.system.nucleic import CalculateDistance
+from dart.system.constants import PROTTHREE, PROTONE
 
 # Logging
 import logging

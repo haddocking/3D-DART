@@ -6,6 +6,11 @@ import re
 from dart.system.utils import rename_file_path
 import dart.system.constants
 
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("iolib")
+
 
 def WritePar(database,filename,verbose=False):
 	
@@ -124,7 +129,7 @@ class InputOutputControl:
 		
 		for a in output_expect:
 			if not os.path.isfile(a):
-				print("    * WARNING: file:", a, "is not present in the output")
+				log.warning("File {} is not present in the output".format(a))
 		
 		"""True output"""
 		output_true = []

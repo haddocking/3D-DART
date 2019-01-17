@@ -24,10 +24,10 @@ dart_base_path = '/'.join(split_path[0:-1])
 
 platform = os.uname()[0]
 if platform == 'Darwin':
-    os.environ["X3DNA"] = os.path.join(dart_base_path, 'softwar', 'X3DNA-mac')
+    os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-mac')
     os.environ["PATH"] = "{0}:{1}/software/X3DNA-mac/bin".format(os.getenv("PATH"), dart_base_path)
 elif platform == 'Linux': 
-    os.environ["X3DNA"] = os.path.join(dart_base_path, 'softwar', 'X3DNA-linux')
+    os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-linux')
     os.environ["PATH"] = "{0}:{1}/software/X3DNA-linux/bin".format(os.getenv("PATH"), dart_base_path)
 else:
     log.error('Platform {0} not supported'.format(platform))
