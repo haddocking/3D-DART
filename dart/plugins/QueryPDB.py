@@ -21,6 +21,7 @@ from dart.system.xpath import Xpath
 from dart.system.nucleic import CalculateDistance
 from dart.system.constants import PROTTHREE, PROTONE
 
+
 # Logging
 import logging
 logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
@@ -165,10 +166,9 @@ class GetSequence:
 		
 		query.Evaluate(query={1:{'element':'chain','attr':None}})
 		for chain in query.nodeselection[1]:
-			query.getAttr(node=chain,selection='ID',export='string')
+			query.getAttr(node=chain, selection='ID', export='string')
 		chains = query.result
 		query.ClearResult()
-		
 		for chain in chains:
 			query.Evaluate(query={1:{'element':'chain','attr':{'ID':chain}},2:{'element':'resid','attr':None}})
 			for resid in query.nodeselection[2]:
@@ -185,12 +185,13 @@ class GetSequence:
 			query.ClearResult()	
 
 	def FormatOutput(self):
-		for chain in self.seqlib.keys():
+		for chain in self.seqlib:
 			log.info("Chain: {}".format(chain))
 			log.info("start at resid nr %d end at resid nr %d" % (min(self.seqlib[chain][0]),max(self.seqlib[chain][0])))
 			log.info("sequence:")
 			for resid in self.seqlib[chain][1]:
 				log.info("{} ".format(resid))
+
 
 class NAsummery:
 	"""Evaluates the structure of a nucleic acid on: type, chains and pairing"""
@@ -206,46 +207,47 @@ class NAsummery:
 		
 	def Evaluate(self):
 		"""First indentifies type of chain in sequence"""
-		chains = self.sequence.keys()
+		chains = list(self.sequence.keys())
+
 		if len(chains) == 0:
 			log.error("No chains found in structure, stopping")
 			raise SystemExit
 		else:
 			log.info("    * Found %i chains in structure" % len(chains))
 			self._EvalMolType(chains)
-		
+
 		# Find segments (if any) in chains
-		for chain in self.moltype.keys():
+		for chain in self.moltype:
 			if self.moltype[chain] == 'DNA' or self.moltype[chain] == 'RNA':
 				self._BackboneTrace(chain)
 		
 		# Extract paired chains/segments
-		for chain in self.chainlib.keys():
+		for chain in self.chainlib:
 			self._FindPairs(chain)
-	
+
 		# TEMPORARY HACK TO MAKE X3DNAANALYZE WORK
 		if len(self.chainlib) == 1:
-			for keys in self.chainlib.keys():
-				self.chainlib[keys][1].reverse()
-				self.pairs[keys][1].reverse()
+			for chain in self.chainlib:
+				self.chainlib[chain][1].reverse()
+				self.pairs[chain][1].reverse()
 		elif len(self.chainlib) == 2:
 			chain = {}
-			chain[self.chainlib.keys()[0]] = []
-			for keys in self.chainlib.keys():
-				chain[self.chainlib.keys()[0]].append(self.chainlib[keys][0])
-			chain[self.chainlib.keys()[0]][1].reverse()
+			chain[list(self.chainlib.keys())[0]] = []
+			for keys in self.chainlib:
+				chain[list(self.chainlib.keys())[0]].append(self.chainlib[keys][0])
+			chain[list(self.chainlib.keys())[0]][1].reverse()
 			pair = {}
-			pair[self.chainlib.keys()[0]] = []
-			for keys in self.pairs.keys():
-				pair[self.chainlib.keys()[0]].append(self.pairs[keys][0])
-			pair[self.chainlib.keys()[0]][1].reverse()
+			pair[list(self.chainlib.keys())[0]] = []
+			for keys in self.pairs:
+				pair[list(self.chainlib.keys())[0]].append(self.pairs[keys][0])
+			pair[list(self.chainlib.keys())[0]][1].reverse()
 			self.chainlib = chain
 			self.pairs = pair
 			
-	def _EvalMolType(self,chains):
+	def _EvalMolType(self, chains):
 		log.info("    * Evaluate chain molecule type (RNA, DNA, protein)")
 		for chain in chains:
-			for resid in self.sequence[chain][1]:
+			for resid in self.sequence[chain][0]:
 				if resid in RNATHREE:
 					self.moltype[chain] = 'RNA'
 					break				#First occurence of URI, claim RNA. Little messy
@@ -262,10 +264,10 @@ class NAsummery:
 				   	self.moltype[chain] = 'PROT'	
 				else:
 					pass
-		for chain in self.moltype.keys():
-			log.info( "      Chain {} is indentified as moltype {}".format(chain,self.moltype[chain]))
+		for chain in self.moltype:
+			log.info( "      Chain {} is indentified as moltype {}".format(chain, self.moltype[chain]))
 	
-	def _BackboneTrace(self,chainid):
+	def _BackboneTrace(self, chainid):
 		"""Calculates same-strand C5' to C5' distance"""
 		log.info("    * Indentify segments for chain {}".format(chainid))
 		log.info("    * Calculating same-strand C5' to C5' distance to extract segments from structure. Segment indentified")
@@ -273,10 +275,13 @@ class NAsummery:
 		log.info("      Distance  Residue  Residue+1  Cutoff")
 		
 		query = Xpath(self.pdbxml)
-		query.Evaluate(query={1:{'element':'chain','attr':{'ID':chainid}},2:{'element':'resid','attr':None},3:{'element':'atom','attr':{'ID':"C5'"}}})
+		query.Evaluate(query={
+			1:{'element':'chain','attr':{'ID':chainid}},
+			2:{'element':'resid','attr':None},
+			3:{'element':'atom','attr':{'ID':"C5'"}}})
 		
 		for resid in query.nodeselection[2]:
-		 	query.getAttr(node=resid, selection='nr', export='string')
+			query.getAttr(node=resid, selection='nr', export='string')
 		residues = query.result
 		query.ClearResult()
 		
@@ -289,9 +294,9 @@ class NAsummery:
 		self.chainlib[chainid] = []
 		for residue in range(len(residues)):
 			try:
-				distance = CalculateDistance(atoms[residue],atoms[residue+1])
+				distance = CalculateDistance(atoms[residue], atoms[residue+1])
 				cutoff = self._CalcCutoff(distance)
-				log.info("      %1.4f %6i %6i %15.4f" % (distance,(residues[residue]),(residues[residue+1]),cutoff)) 
+				log.info("      %1.4f %6d %6d %15.4f" % (distance, (residues[residue]), (residues[residue+1]), cutoff))
 				if distance < cutoff:
 					chain.append(residues[residue])
 				else:
@@ -309,7 +314,7 @@ class NAsummery:
 		else:
 			log.info("    * Identified %i segment(s):" % len(self.chainlib[chainid]))
 			for chain in range(len(self.chainlib[chainid])):
-				log.info("      Segment %i range: %i to %i" % (chain+1,min(self.chainlib[chainid][chain]),max(self.chainlib[chainid][chain])))
+				log.info("      Segment %i range: %i to %i" % (chain+1, min(self.chainlib[chainid][chain]), max(self.chainlib[chainid][chain])))
 		
 	def _CalcCutoff(self,distance):
 		self.cutoff.append(distance)

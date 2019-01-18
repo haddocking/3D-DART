@@ -90,6 +90,7 @@ def PluginCore(paramdict, inputlist):
 			bend.CalcGlobalBend(multiana=False)
 		except Exception as err:
 			log.error("No valid input found: {}".format(err))
+			raise err
 			raise SystemExit
 
 
@@ -682,15 +683,21 @@ class MeasureBend:
 				residnr2.append(int(splitter2.split(tmp2[4])[0]))
 				resid1.append(splitter3.split(tmp2[2])[0])
 				resid2.append(splitter3.split(tmp2[3])[0])
-		#TODO Distinction between OSX and Linux version (tmp2[0][1] for OSX)
+		
+		# FIXED: Distinction between OSX and Linux version (tmp2[0][1] for OSX)
 		#extract chainid once from .out file
-		self.chainid = tmp2[0][0]	
+		platform = os.uname()[0]
+		if platform == 'Darwin':
+			self.chainid = tmp2[0][1]
+		else:
+			self.chainid = tmp2[0][0]
+
 		tableout[infile] = []
 		tableout[infile].append(intnr)
 		tableout[infile].append(resid1)
 		tableout[infile].append(resid2)
 		tableout[infile].append(residnr1)
-		tableout[infile].append(residnr2)	
+		tableout[infile].append(residnr2)
 	
 	def _StepDevide(self):
 		"""Devides all values for roll, tilt and twist according to the base-pair step number in full sequence"""
@@ -762,22 +769,22 @@ class MeasureBend:
 		
 		for infile in files:
 			log.info("    * Running global bend analysis on file: {}".format(os.path.basename(infile)))
-			readfile = file(infile,'r')
-			lines = readfile.readlines()	
-			linecount = 1
-			countstart = []
-			for line in lines:
-				line = line.strip()
-				result1 = rmsd.match(line)
-				result2 = bpstep.match(line)
-				if result1:
-					tablelines = self._ReadTable(linenr=len(countstart)+2,outfile=lines)
-					self._MatchPairs(tablein=tablelines,tableout=self.pairs,infile=infile)
-				elif result2:
-					tablelines = self._ReadTable(linenr=len(countstart),outfile=lines)
-					self._SortTable(tablein=tablelines,tableout=self.bpstep,infile=infile)	
-				linecount += 1
-				countstart.append(linecount)	
+			with open(infile) as readfile:
+				lines = readfile.readlines()	
+				linecount = 1
+				countstart = []
+				for line in lines:
+					line = line.strip()
+					result1 = rmsd.match(line)
+					result2 = bpstep.match(line)
+					if result1:
+						tablelines = self._ReadTable(linenr=len(countstart)+2, outfile=lines)
+						self._MatchPairs(tablein=tablelines, tableout=self.pairs, infile=infile)
+					elif result2:
+						tablelines = self._ReadTable(linenr=len(countstart), outfile=lines)
+						self._SortTable(tablein=tablelines, tableout=self.bpstep, infile=infile)
+					linecount += 1
+					countstart.append(linecount)
 		
 	def ReadParfiles(self, files):
 		"""Parses 3DNA .par files and extracts roll, tilt and twist values as well as sequence information.
@@ -792,34 +799,34 @@ class MeasureBend:
 			log.info("    * Running global bend analysis on file: {}".format(os.path.basename(infile)))
 			self.bpstep[infile] = []
 			self.pairs[infile] = []
-			readfile = file(infile, 'r')
-			lines = readfile.readlines()
-			resnr = []
-			sequence = []
-			tilt = []
-			roll = []
-			twist = []
-			rescount = 1
-			resnr.append(rescount)
-			sequence.append((lines[3].split())[0])
-			tilt.append(zero)
-			roll.append(zero)
-			twist.append(zero)
-			rescount += 1
-			for line in lines[4:]:
-				line = line.strip()
-				value = line.split()
+			with open(infile, 'r') as readfile:
+				lines = readfile.readlines()
+				resnr = []
+				sequence = []
+				tilt = []
+				roll = []
+				twist = []
+				rescount = 1
 				resnr.append(rescount)
-				sequence.append(value[0])
-				tilt.append(self._FormatFloat(value[10]))
-				roll.append(self._FormatFloat(value[11]))
-				twist.append(self._FormatFloat(value[12]))
+				sequence.append((lines[3].split())[0])
+				tilt.append(zero)
+				roll.append(zero)
+				twist.append(zero)
 				rescount += 1
-			self.bpstep[infile].append(resnr)
-			self.bpstep[infile].append(sequence)
-			self.bpstep[infile].append(tilt)
-			self.bpstep[infile].append(roll)
-			self.bpstep[infile].append(twist)
+				for line in lines[4:]:
+					line = line.strip()
+					value = line.split()
+					resnr.append(rescount)
+					sequence.append(value[0])
+					tilt.append(self._FormatFloat(value[10]))
+					roll.append(self._FormatFloat(value[11]))
+					twist.append(self._FormatFloat(value[12]))
+					rescount += 1
+				self.bpstep[infile].append(resnr)
+				self.bpstep[infile].append(sequence)
+				self.bpstep[infile].append(tilt)
+				self.bpstep[infile].append(roll)
+				self.bpstep[infile].append(twist)
 		
 	def CalcGlobalBend(self, multiana):
 		"""Control module"""
@@ -834,28 +841,31 @@ class MeasureBend:
 			self._WriteMultiBend()
 	
 	def GetBaseseq(self):
-		"""Get the base sequence and pairing as it should be in a fully paired structure (input)
-		   Calls GetSequence and NAsummery class from QueryPDB plugin. The output must be of a
-		   fixed format: the chains in chainlib and sequence in pairs must can only have 2 lists
-		   more than two chains are not supported. The two chains must be written as 5'->3' for 
-		   the template strand (first list) and 3'->5' for the complementary strand (second list)"""
-		
-		master = os.path.splitext(self.bpstep.keys()[0])[0]+'.pdb'
+		"""Get the base sequence and pairing as it should be in a fully paired structure (input).
+
+		Calls GetSequence and NAsummery class from QueryPDB plugin. The output must be of a
+		fixed format: the chains in chainlib and sequence in pairs must can only have 2 lists
+		more than two chains are not supported. The two chains must be written as 5'->3' for 
+		the template strand (first list) and 3'->5' for the complementary strand (second list)
+		"""
+		master = os.path.splitext(list(self.bpstep.keys())[0])[0] + '.pdb'
 		
 		pdb = PDBeditor()
-		pdb.ReadPDB(master)	
+		pdb.read_pdb(master)	
 		xml = pdb.PDB2XML().xml()
 		
 		sequence = GetSequence()
 		sequence.GetSequence(pdbxml=xml)
-		
-		naeval = NAsummery(pdbxml=xml,sequence=sequence.seqlib)
-		naeval.Evaluate()	
+
+		naeval = NAsummery(pdbxml=xml, sequence=sequence.seqlib)
+
+		naeval.Evaluate()
 
 		self.basechainlib = naeval.chainlib
-		seq = ConvertSeq(naeval.pairs[self.chainid][0],naeval.pairs[self.chainid][1])
+		seq = ConvertSeq(naeval.pairs[self.chainid][0], naeval.pairs[self.chainid][1])
 		self.basesequence[self.chainid] = seq.Export('step1')
-			
+
+
 if __name__ == '__main__':
 	
 	# Setting up parameter dictionary

@@ -23,7 +23,7 @@ def WritePar(database,filename,verbose=False):
 	else:
 		MakeBackup(os.path.splitext(filename)[0]+'.par')
 		outfile = file(os.path.splitext(filename)[0]+'.par','w')
-		print("    * Writing new parameter file with name %s" % filename)
+		log.info("    * Writing new parameter file with name {}".format(filename))
 		
 	for param in BASEPAIR_STEPS:	#All first values for base-pair step parameters are always 0
 		database.Update(param,float(0),0)
@@ -76,7 +76,7 @@ class InputOutputControl:
 				elif os.path.basename(n) in self.checkedinput:
 					self.checkedinput[os.path.basename(n)].append(n)	
 			else:
-				print("    * InputCheck ERROR: file", n, "not found")
+				log.error("    * InputCheck ERROR: file {} not found".format(n))
 	
 	def CheckInput(self,files,requirements=None):
 
@@ -106,7 +106,7 @@ class InputOutputControl:
 			if os.path.isfile(expected):
 				self.checkedinput[required].append(expected)
 			else:
-				print("    * InputCheck ERROR: file", expected, "expected but not found")
+				log.error("    * InputCheck ERROR: file {} expected but not found".format(expected))
 	
 	def CheckOutput(self,files,requirements=None):
 	
@@ -201,14 +201,14 @@ class DatabaseDeamon:
 				try:
 					self.database[key][index] = self._TypeCheck(item)[0]
 				except:
-					print("    * ERROR: failed database update of dataset %s at index %i\n" % (key,index))
+					log.error("    * Failed database update of dataset {} at index {}\n".format(key,index))
 		else:	
 			if self.database.has_key(key) == True:
 				if len(item) == len(self.database[key]):
 					del self.database[key]
 					self.database[key] = self._TypeCheck(item)
 				else:
-					print("    * DATABASE-ERROR: new list of items does not match length of old list")	
+					log.error("    * DATABASE-ERROR: new list of items does not match length of old list")	
 		
 	def Load(self,name,data):
 		
