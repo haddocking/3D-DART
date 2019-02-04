@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Input:				PDB data file and any of the allowed options, any order and 
+Input:				PDB data file and any of the allowed options, any order and
 					combined.
 Output:				A new PDB file or XML representation.
-Plugin excecution:	Either command line driven (use -h/--help for the option) or as 
+Plugin excecution:	Either command line driven (use -h/--help for the option) or as
 					part of a DART batch sequence.
 Plugin function:	A suite of functions to modify PDB files. Features include:
 					change nucleic acid nomenclature from a 1-letter to a 3-letter
@@ -30,7 +30,7 @@ if not base in sys.path:
     sys.path.append(base)
 
 from dart.system.XMLwriter import Node
-from dart.system.constants import blank
+from dart.system.Constants import blank
 
 # Logging
 import logging
@@ -171,7 +171,7 @@ def PluginCore(paramdict, inputlist):
                     outfile = paramdict['name']
 
             log.info("    * Printing fixed pdb file as: {}".format(outfile))
-            pdb.write_pdb(file_out=outfile, join=False, modelnr=0, noheader=paramdict['noheader'], 
+            pdb.write_pdb(file_out=outfile, join=False, modelnr=0, noheader=paramdict['noheader'],
                 nofooter=paramdict['nofooter'], nohetatm=paramdict['nohetatm'])
 
         elif paramdict['pdb2xml'] == False and paramdict['joinpdb'] == True and paramdict['splitpdb'] == None:
@@ -507,7 +507,7 @@ class PDBeditor:
             if model.match(line):
                 if not len(models[modelcount]) == 0:
                     modelcount += 1
-                    if models.has_key(modelcount) == False:
+                    if not modelcount in models:
                         models[modelcount] = []
                 linenr += 1
             if atom_hetatm.match(line):
@@ -586,7 +586,7 @@ class PDBeditor:
 
     def SetchainID(self, old=None, new=None):
         """Converts the chain ID from the old ID to the user supplied new ID if None do nothing.
-        
+
         Option examples: (A) all to A, (A,B) all A to B. Lower case is converted to upper case.
         """
         newchainseq = []

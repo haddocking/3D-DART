@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Plugin function:	Makes a hirargical representation of the PDB (same as QueryPDB) 
+Plugin function:	Makes a hirargical representation of the PDB (same as QueryPDB)
 					and and provides various function to perform calculations on the
 					data in the PDB
 """
@@ -17,9 +17,9 @@ if base not in sys.path:
 	sys.path.append(base)
 
 from dart.plugins.PDBeditor import PDBeditor
-from dart.system.xpath import Xpath
+from dart.system.Xpath import Xpath
 from dart.system.nucleic import CalculateDistance
-from dart.system.constants import PROTTHREE, PROTONE
+from dart.system.Constants import PROTTHREE, PROTONE
 
 
 # Logging
@@ -29,7 +29,7 @@ log = logging.getLogger("QueryPDB")
 
 
 # Some defaults
-DNATHREE = ['GUA','CYT','THY','ADE'] 
+DNATHREE = ['GUA','CYT','THY','ADE']
 DNAONE = ['G','C','T','A']
 RNATHREE = ['URI']
 RNAONE = ['U']
@@ -65,62 +65,62 @@ def PluginCore(paramdict, inputlist):
 			xml = files
 		else:
 			pdb = PDBeditor()
-			pdb.ReadPDB(files)	
+			pdb.ReadPDB(files)
 			xml = pdb.PDB2XML().xml()
-		
+
 		if paramdict['sequence'] == True:
 			sequence = GetSequence()
 			sequence.GetSequence(pdbxml=xml)
 			sequence.FormatOutput()
-		
+
 		if paramdict['NAsummery'] == True:
 			log.info("Starting nucleic-acid structure evaluation process on structure {}".format(os.path.basename(files)))
 			log.info("    * Getting sequence information")
-	
+
 			sequence = GetSequence()
 			sequence.GetSequence(pdbxml=xml)
-			
+
 			naeval = NAsummery(pdbxml=xml,sequence=sequence.seqlib)
 			naeval.Evaluate()
 
 
 class CommandlineOptionParser:
 	"""Parses command line arguments using optparse"""
-	
+
 	def __init__(self):
 		self.option_dict = {}
 		self.option_dict = self.CommandlineOptionParser()
-	
+
 	def CommandlineOptionParser(self):
 		"""Parsing command line arguments"""
-	
+
 		usage = "usage: %prog [options] arg"
 		parser = OptionParser(usage)
 
 		parser.add_option( "-f", "--file", action="callback", callback=self.varargs, dest="inputfile", type="string", help="Supply pdb inputfile(s)")
 		parser.add_option( "-n", "--NAsummery", action="store_true", dest="NAsummery", default=False, help="Print summery of nucleic acid structure data")
 		parser.add_option( "-s", "--sequence", action="store_true", dest="sequence", default=False, help="Return the sequence of all chains in the PDB")
-		
+
 		(options, args) = parser.parse_args()
-		
+
 		self.option_dict['input'] = options.inputfile
 		self.option_dict['NAsummery'] = options.NAsummery
 		self.option_dict['sequence'] = options.sequence
-			
+
 		if not self.option_dict['input'] == None:
 			parser.remove_option('-f')
 			arg = self.GetFirstArgument(parser, shorta='-f', longa='--file')
 			self.option_dict['input'].append(arg)
 			fullpath = self.GetFullPath(self.option_dict['input'])
 			self.option_dict['input'] = fullpath
-			
+
 		if parser.has_option('-f'):
 			pass
 		else:
 			parser.add_option( "-f", "--file", action="store", dest="dummy2", type="string") #only needs to be here to complete the argument list, not used!
-	
+
 		return self.option_dict
-	
+
 	def GetFullPath(self, inputfiles):
 		currdir = os.getcwd()
 		filelist = []
@@ -128,9 +128,9 @@ class CommandlineOptionParser:
 			path = os.path.join(currdir, files)
 			filelist.append(path)
 		return filelist
-	
+
 	def GetFirstArgument(self, parser, shorta, longa):
-		"""HACK, optparse has difficulties in variable argument lists. The varargs definition solves this but never reports the first 
+		"""HACK, optparse has difficulties in variable argument lists. The varargs definition solves this but never reports the first
 		   argument of the list. This definition hacks this issue"""
 
 		parser.add_option( shorta, longa, action="store", dest="temp", type="string", help="Execute custom workflow assembled on the command line. You can execute a single plugin by typing '-p pluginname' or a sequence of plugins by typing '-p plugin1,plugin2...'")
@@ -138,7 +138,7 @@ class CommandlineOptionParser:
 		first_arg = options.temp
 		parser.remove_option(shorta)
 		return first_arg
-			
+
 	def varargs(self, option, opt_str, value, parser):
 		"""Deals with variable list of command line arguments"""
 		value = []
@@ -154,16 +154,16 @@ class CommandlineOptionParser:
 		setattr(parser.values, option.dest, value)
 
 
-class GetSequence:	
+class GetSequence:
 	"""Returns the sequence of the supplied PDB"""
-	
+
 	def __init__(self):
 		self.seqlib = {}
-	
+
 	def GetSequence(self, pdbxml=None):
 		"""Appends sequence and resid nr of all chains in pdb to seqlib"""
 		query = Xpath(pdbxml)
-		
+
 		query.Evaluate(query={1:{'element':'chain','attr':None}})
 		for chain in query.nodeselection[1]:
 			query.getAttr(node=chain, selection='ID', export='string')
@@ -173,16 +173,16 @@ class GetSequence:
 			query.Evaluate(query={1:{'element':'chain','attr':{'ID':chain}},2:{'element':'resid','attr':None}})
 			for resid in query.nodeselection[2]:
 				query.getAttr(node=resid,selection=['ID','nr'])
-			residues = query.result 
+			residues = query.result
 			resid = []
 			resnr = []
 			for residue in residues:
 				resid.append(residue[0])
 				resnr.append(residue[1])
-			self.seqlib[chain] = []	
+			self.seqlib[chain] = []
 			self.seqlib[chain].append(resid)
 			self.seqlib[chain].append(resnr)
-			query.ClearResult()	
+			query.ClearResult()
 
 	def FormatOutput(self):
 		for chain in self.seqlib:
@@ -199,12 +199,12 @@ class NAsummery:
 	def __init__(self, pdbxml=None, sequence=None):
 		self.pdbxml = pdbxml
 		self.sequence = sequence
-		
+
 		self.moltype = {}
 		self.chainlib = {}
 		self.pairs = {}
 		self.cutoff = []
-		
+
 	def Evaluate(self):
 		"""First indentifies type of chain in sequence"""
 		chains = list(self.sequence.keys())
@@ -220,7 +220,7 @@ class NAsummery:
 		for chain in self.moltype:
 			if self.moltype[chain] == 'DNA' or self.moltype[chain] == 'RNA':
 				self._BackboneTrace(chain)
-		
+
 		# Extract paired chains/segments
 		for chain in self.chainlib:
 			self._FindPairs(chain)
@@ -243,7 +243,7 @@ class NAsummery:
 			pair[list(self.chainlib.keys())[0]][1].reverse()
 			self.chainlib = chain
 			self.pairs = pair
-			
+
 	def _EvalMolType(self, chains):
 		log.info("    * Evaluate chain molecule type (RNA, DNA, protein)")
 		for chain in chains:
@@ -254,42 +254,42 @@ class NAsummery:
 				elif resid in RNAONE:
 					self.moltype[chain] = 'RNA'
 					break				#First occurence of U, claim RNA. Little messy
-				elif resid in DNATHREE:					
+				elif resid in DNATHREE:
 					self.moltype[chain] = 'DNA'
-				elif resid in DNAONE:					
-					self.moltype[chain] = 'DNA'	
+				elif resid in DNAONE:
+					self.moltype[chain] = 'DNA'
 				elif resid in PROTTHREE:
 				   	self.moltype[chain] = 'PROT'
 				elif resid in PROTONE:
-				   	self.moltype[chain] = 'PROT'	
+				   	self.moltype[chain] = 'PROT'
 				else:
 					pass
 		for chain in self.moltype:
 			log.info( "      Chain {} is indentified as moltype {}".format(chain, self.moltype[chain]))
-	
+
 	def _BackboneTrace(self, chainid):
 		"""Calculates same-strand C5' to C5' distance"""
 		log.info("    * Indentify segments for chain {}".format(chainid))
 		log.info("    * Calculating same-strand C5' to C5' distance to extract segments from structure. Segment indentified")
 		log.info("      when C5'-C5' distance is larger than dynamic average + standard deviation + 1 = cutoff")
 		log.info("      Distance  Residue  Residue+1  Cutoff")
-		
+
 		query = Xpath(self.pdbxml)
 		query.Evaluate(query={
 			1:{'element':'chain','attr':{'ID':chainid}},
 			2:{'element':'resid','attr':None},
 			3:{'element':'atom','attr':{'ID':"C5'"}}})
-		
+
 		for resid in query.nodeselection[2]:
 			query.getAttr(node=resid, selection='nr', export='string')
 		residues = query.result
 		query.ClearResult()
-		
+
 		for atom in query.nodeselection[3]:
 			query.getAttr(node=atom, selection=['corx','cory','corz'])
 		atoms = query.result
 		query.ClearResult()
-		
+
 		chain = []
 		self.chainlib[chainid] = []
 		for residue in range(len(residues)):
@@ -307,7 +307,7 @@ class NAsummery:
 			except:
 				chain.append(residues[residue])
 				self.chainlib[chainid].append(chain)
-			
+
 		if len(self.chainlib[chainid]) == 0:
 			log.error("No segments indentified, stopping")
 			raise SystemExit
@@ -315,17 +315,17 @@ class NAsummery:
 			log.info("    * Identified %i segment(s):" % len(self.chainlib[chainid]))
 			for chain in range(len(self.chainlib[chainid])):
 				log.info("      Segment %i range: %i to %i" % (chain+1, min(self.chainlib[chainid][chain]), max(self.chainlib[chainid][chain])))
-		
+
 	def _CalcCutoff(self,distance):
 		self.cutoff.append(distance)
 		if len(self.cutoff) == 1:
 			cutoff = self.cutoff[0]+1
-		else:	
+		else:
 			average = mean(self.cutoff)
 			stdev = std(self.cutoff)
 			cutoff = average+stdev+1
-		return cutoff			
-	
+		return cutoff
+
 	def _FindPairs(self, chain):
 		self.pairs[chain] = []
 		if len(self.chainlib[chain]) > 1:
@@ -335,28 +335,28 @@ class NAsummery:
 				maxl = maxl + len(segment)
 				self.pairs[chain].append(self.sequence[chain][1][minl:maxl])
 				minl = maxl
-				maxl += 1	
+				maxl += 1
 		else:
-			self.pairs[chain].append(self.sequence[chain][1])		
+			self.pairs[chain].append(self.sequence[chain][1])
 
 
 if __name__ == '__main__':
-	
+
 	# Parse command line arguments
 	paramdict = {'showonexec':'False','inputfrom':'self','autogenerateGui':'False'}
 	option_dict = CommandlineOptionParser().option_dict
-	
+
 	for key in option_dict:
 		paramdict[key] = option_dict[key]
 	del option_dict
-	
+
 	# Check for input
 	if paramdict['input'] == None:
 		log.info("    * Please supply pdb file using option -f or use option -h/--help for usage")
 		raise SystemExit
 	else:
 		inputlist = paramdict['input']
-	
+
 	PluginCore(paramdict, inputlist)
 
 	raise SystemExit

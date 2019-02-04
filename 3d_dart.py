@@ -6,41 +6,41 @@ import argparse
 import os
 import sys
 from time import ctime
-from dart.system.version import __version__
-from dart.system.command_line_parser import CommandLineOptionParser
-from dart.system.framework import PluginExecutor
-
-
-# Logging
-import logging
-logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
-log = logging.getLogger("3D-DART")
-
 
 # Set environment
 base, dirs = os.path.split(os.path.join(os.getcwd(), __file__))
 split_path = base.split('/')
 dart_base_path = '/'.join(split_path[0:-1])
 
+if base not in sys.path:
+    sys.path.append(base)
+
+from dart.system.version import __version__
+from dart.system.command_line_parser import CommandLineOptionParser
+from dart.system.FrameWork import PluginExecutor
+
+# Logging
+import logging
+logging.basicConfig(format='%(name)s [%(levelname)s] %(message)s', level=logging.INFO)
+log = logging.getLogger("3D-DART")
+
 platform = os.uname()[0]
 if platform == 'Darwin':
-    os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-mac')
-    os.environ["PATH"] = "{0}:{1}/software/X3DNA-mac/bin".format(os.getenv("PATH"), dart_base_path)
-elif platform == 'Linux': 
+    os.environ['X3DNA'] = '/opt/personal/X3DNA'
+    os.environ['PATH'] = '{0}:/opt/personal/X3DNA/bin'.format(os.getenv("PATH"))
+    #os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-mac')
+    #os.environ["PATH"] = "{0}:{1}/software/X3DNA-mac/bin".format(os.getenv("PATH"), dart_base_path)
+elif platform == 'Linux':
     os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-linux')
     os.environ["PATH"] = "{0}:{1}/software/X3DNA-linux/bin".format(os.getenv("PATH"), dart_base_path)
 else:
     log.error('Platform {0} not supported'.format(platform))
     raise SystemExit
-    
-if base not in sys.path:
-    sys.path.append(base)
-
 
 def system_checks():
     """Checks the system environment"""
     log.info("Performing System Checks:")
-    
+
     """Python version check"""
     interpreter_version = float(sys.version[:3])
     if interpreter_version < 3.0:
@@ -49,7 +49,7 @@ def system_checks():
         raise SystemExit
     else:
         log.info("   * Python version is: {}".format(sys.version[:5]))
-    
+
     try:
         import numpy
         log.info("   * NumPy version is: {}".format(numpy.__version__))
@@ -77,11 +77,11 @@ def welcome_message():
 
 if __name__ == "__main__":
     welcome_message()
-    
+
     system_checks()
-    
+
     options = CommandLineOptionParser(dart_path=base)
-    
+
     PluginExecutor(opt_dict=options.option_dict, DARTdir=base)
-    
+
     exit_message()
