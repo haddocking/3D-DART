@@ -9,6 +9,7 @@ Plugin function:	Makes a hirargical representation of the PDB (same as QueryPDB)
 import os
 import sys
 import re
+import numpy as np
 from optparse import OptionParser
 
 # Setting pythonpath variables if run from the command line
@@ -17,7 +18,7 @@ if base not in sys.path:
 	sys.path.append(base)
 
 from dart.plugins.PDBeditor import PDBeditor
-from dart.system.Xpath import Xpath
+from dart.system.xpath import Xpath
 from dart.system.nucleic import CalculateDistance
 from dart.system.Constants import PROTTHREE, PROTONE
 
@@ -282,7 +283,8 @@ class NAsummery:
 
 		for resid in query.nodeselection[2]:
 			query.getAttr(node=resid, selection='nr', export='string')
-		residues = query.result
+		# Fixed float:
+		residues = [int(x) for x in query.result]
 		query.ClearResult()
 
 		for atom in query.nodeselection[3]:
@@ -292,7 +294,7 @@ class NAsummery:
 
 		chain = []
 		self.chainlib[chainid] = []
-		for residue in range(len(residues)):
+		for residue in range(len(residues)-1):	# Fixed index out of bound
 			try:
 				distance = CalculateDistance(atoms[residue], atoms[residue+1])
 				cutoff = self._CalcCutoff(distance)
@@ -304,9 +306,12 @@ class NAsummery:
 					self.chainlib[chainid].append(chain)
 					self.cutoff = []
 					chain = []
-			except:
-				chain.append(residues[residue])
-				self.chainlib[chainid].append(chain)
+			except Exception as err:
+				log.error("Error in _BackboneTrace: ", err)
+		
+		# Add the final segment
+		chain.append(residues[-1])
+		self.chainlib[chainid].append(chain)
 
 		if len(self.chainlib[chainid]) == 0:
 			log.error("No segments indentified, stopping")
@@ -319,10 +324,10 @@ class NAsummery:
 	def _CalcCutoff(self,distance):
 		self.cutoff.append(distance)
 		if len(self.cutoff) == 1:
-			cutoff = self.cutoff[0]+1
+			cutoff = self.cutoff[0] + 1
 		else:
-			average = mean(self.cutoff)
-			stdev = std(self.cutoff)
+			average = np.mean(self.cutoff)
+			stdev = np.std(self.cutoff)
 			cutoff = average+stdev+1
 		return cutoff
 
@@ -333,7 +338,7 @@ class NAsummery:
 			maxl = 0
 			for segment in self.chainlib[chain]:
 				maxl = maxl + len(segment)
-				self.pairs[chain].append(self.sequence[chain][1][minl:maxl])
+				self.pairs[chain].append([int(x) for x in self.sequence[chain][1][minl:maxl]])
 				minl = maxl
 				maxl += 1
 		else:

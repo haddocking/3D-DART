@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""A basic popup in which you can select files as inut for follow up plugins"""
+"""A basic popup in which you can select files as input for follow up plugins"""
 
 import os
 import shutil

@@ -8,9 +8,9 @@ import re
 import copy
 import importlib
 from time import ctime
-from dart.system.Xpath import Xpath
+from dart.system.xpath import Xpath
 from dart.system.XMLwriter import Node
-from dart.system.Utils import make_backup
+from dart.system.utils import make_backup
 from dart.system.IOlib import InputOutputControl
 
 # Logging
@@ -110,7 +110,7 @@ class PluginExecutor:
 			module = importlib.import_module("dart.plugins.{}".format(plugin))
 			PluginCore = getattr(module, "PluginCore")
 			PluginCore(paramdict, filelist)
-			outputlist = checked.CheckOutput(glob.glob('*.*'),metadict['output'])
+			outputlist = checked.CheckOutput(glob.glob('*.*'), metadict['output'])
 
 			os.chdir(self.rundir)
 

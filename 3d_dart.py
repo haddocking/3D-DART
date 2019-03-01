@@ -26,10 +26,10 @@ log = logging.getLogger("3D-DART")
 
 platform = os.uname()[0]
 if platform == 'Darwin':
-    os.environ['X3DNA'] = '/opt/personal/X3DNA'
-    os.environ['PATH'] = '{0}:/opt/personal/X3DNA/bin'.format(os.getenv("PATH"))
-    #os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-mac')
-    #os.environ["PATH"] = "{0}:{1}/software/X3DNA-mac/bin".format(os.getenv("PATH"), dart_base_path)
+    #os.environ['X3DNA'] = '/opt/personal/X3DNA'
+    #os.environ['PATH'] = '{0}:/opt/personal/X3DNA/bin'.format(os.getenv("PATH"))
+    os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-mac')
+    os.environ["PATH"] = "{0}:{1}/software/X3DNA-mac/bin".format(os.getenv("PATH"), dart_base_path)
 elif platform == 'Linux':
     os.environ["X3DNA"] = os.path.join(dart_base_path, 'software', 'X3DNA-linux')
     os.environ["PATH"] = "{0}:{1}/software/X3DNA-linux/bin".format(os.getenv("PATH"), dart_base_path)

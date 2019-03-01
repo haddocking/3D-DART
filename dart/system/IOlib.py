@@ -3,7 +3,7 @@
 import os
 import sys
 import re
-from dart.system.Utils import rename_file_path
+from dart.system.utils import rename_file_path
 import dart.system.Constants
 
 # Logging
@@ -108,10 +108,8 @@ class InputOutputControl:
 			else:
 				log.error("    * InputCheck ERROR: file {} expected but not found".format(expected))
 
-	def CheckOutput(self,files,requirements=None):
-
-		"""Check if required output is generated"""
-
+	def CheckOutput(self, files, requirements=None):
+		"""Checks if required output is generated"""
 		if not requirements or requirements == 'self':
 			requirements = []
 		else:
@@ -119,13 +117,16 @@ class InputOutputControl:
 			requirements = splitter.split(requirements)
 
 		inputfiles = self.DictToList()
+
 		output_expect = []
 		for a in inputfiles:
 			basename, extension = os.path.splitext(os.path.basename(a))
 			for requirement in requirements:
-				if requirement[0] in ['.','_']: output_expect.append(basename+requirement)
+				if requirement[0] in ['.','_']:
+					output_expect.append(basename+requirement)
 		for requirement in requirements:
-			if not requirement[0] in ['.','_']: output_expect.append(requirement)
+			if not requirement[0] in ['.','_']: 
+				output_expect.append(requirement)
 
 		for a in output_expect:
 			if not os.path.isfile(a):
@@ -136,18 +137,18 @@ class InputOutputControl:
 		for a in files:
 			output_true.append(os.path.join(os.getcwd(),a))
 
+		log.info("Plugin output:")
+		print(output_true)
+
 		return output_true
 
 	def DictToList(self):
-
-		"""Return dictionary as plain list of files"""
-
+		"""Returns a dictionary as plain list of files"""
 		filelist = []
-
 		for n in self.checkedinput:
 			filelist = filelist+self.checkedinput[n]
-
 		return filelist
+
 
 class DatabaseDeamon:
 

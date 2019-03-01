@@ -5,8 +5,8 @@ import glob
 import sys
 import argparse
 from time import ctime
-from dart.system.Xpath import Xpath
-from dart.system.Utils import rename_file_path
+from dart.system.xpath import Xpath
+from dart.system.utils import rename_file_path
 from dart.system.DARTserver import WebServer
 from dart.system.version import __version__
 

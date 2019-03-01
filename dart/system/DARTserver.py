@@ -12,7 +12,7 @@ import shutil
 import glob
 import time
 import subprocess
-from dart.system.Xpath import Xpath
+from dart.system.xpath import Xpath
 from dart.system.Constants import *
 
 

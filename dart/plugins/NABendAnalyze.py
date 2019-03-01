@@ -84,7 +84,7 @@ def PluginCore(paramdict, inputlist):
 			bend.CalcGlobalBend(multiana=paramdict['multiana'])
 		else:
 			bend.CalcGlobalBend(multiana=False)
-	except:
+	except Exception as err:
 		try:
 			bend.ReadParfiles(files=checked.checkedinput['.par'])
 			bend.CalcGlobalBend(multiana=False)
@@ -291,11 +291,14 @@ class MeasureBend:
 		return nul_list
 
 	def _ConvertSeq2(self, inlist):
+		# TODO: Check if it is correct the output
 		dupl = deepcopy(inlist)
 		full = len(self.basechainlib[self.chainid][0])
+
 		count = 1
 		while count < full:
-			if self.basechainlib[self.chainid][0][count] == dupl[3][count]:
+			# Fixed count as index!
+			if self.basechainlib[self.chainid][0][count-1] == dupl[3][count-1]:
 				pass
 			else:
 				dupl[0].insert(count,"X")
@@ -337,6 +340,7 @@ class MeasureBend:
 				count += 1
 			except:
 				pass
+
 		return [newlist, newlist2]
 
 	def _CalculateCore(self, files):
@@ -827,6 +831,7 @@ class MeasureBend:
 				self.bpstep[infile].append(tilt)
 				self.bpstep[infile].append(roll)
 				self.bpstep[infile].append(twist)
+		log.info('READ PAR FILE FINISHED')
 
 	def CalcGlobalBend(self, multiana):
 		"""Control module"""
@@ -861,7 +866,16 @@ class MeasureBend:
 		naeval.Evaluate()
 
 		self.basechainlib = naeval.chainlib
-		seq = ConvertSeq(naeval.pairs[self.chainid][0], naeval.pairs[self.chainid][1])
+
+		# Fix to get nucleotides, not numbers!
+		seq_1 = []
+		for res_number in naeval.pairs[self.chainid][0]:
+			seq_1.append(sequence.seqlib[self.chainid][0][res_number-1])
+		seq_2 = []
+		for res_number in naeval.pairs[self.chainid][1]:
+			seq_2.append(sequence.seqlib[self.chainid][0][res_number-1])	
+		#seq = ConvertSeq(naeval.pairs[self.chainid][0], naeval.pairs[self.chainid][1])
+		seq = ConvertSeq(seq_1, seq_2)
 		self.basesequence[self.chainid] = seq.Export('step1')
 
 

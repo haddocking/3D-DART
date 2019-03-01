@@ -42,7 +42,7 @@ if base not in sys.path:
 	sys.path.append(base)
 
 # Import DART specific modules
-from dart.system.Utils import file_root_rename, transform_dash
+from dart.system.utils import file_root_rename, transform_dash
 from dart.system.IOlib import InputOutputControl
 from dart.plugins.QueryPDB import GetSequence, NAsummery
 from dart.plugins.PDBeditor import PDBeditor
