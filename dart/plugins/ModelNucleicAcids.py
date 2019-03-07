@@ -1,13 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-USAGE = """
-==========================================================================================
-
-Author:		    Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center for 
-                Biomolecular Research, Utrecht university, The Netherlands.
-Copyright (C):	2006 (DART project)
-DART version:	1.0 (01-01-2007)
-DART plugin: 	ModelNucleicAcids.py
+"""
 Input:			PAR data file and any of the allowed options, any order and combined
 Output:			One or more new PAR file(s) and a summery file of the generated 
                 PAR files.
@@ -21,18 +14,9 @@ Plugin function:	This plugin allows you to model Nucleic Acids by introduce loca
                 cover nucleic acid bending and twisting and control over the 
                 direction of the bend in space.
 Plugin dependencies:	None
-
-for further information, please contact:
-                - DART website (http://www.nmr.chem.uu.nl/DART)
-                - email: abonvin@chem.uu.nl
-
-If you are using this software for academic purposes please quoting the following 
-reference:
-
-===========================================================================================
 """
 
-"""Import modules"""
+
 import os
 import sys
 from math import sqrt
@@ -51,7 +35,7 @@ else:
 """Import DART specific modules"""
 from dart.system.nucleic import *
 from dart.system.IOlib import *
-from dart.system.Utils import transform_dash, make_backup
+from dart.system.utils import transform_dash, make_backup
 from dart.system.Constants import *
 from dart.plugins.BuildNucleicAcids import FiberModule
 
@@ -185,8 +169,7 @@ class CommandlineOptionParser:
 
         """Parsing command line arguments"""
 
-        usage = "usage: %prog" + USAGE
-        parser = OptionParser(usage)
+        parser = OptionParser()
 
         parser.add_option("-f", "--file", action="callback", callback=self.varargs, dest="input", type="string",
                           help="Supply base parameter file and/or multiout.stat or multibend.stat")
@@ -733,61 +716,59 @@ class ModelNucleicAcids:
         lib.clear()
 
     def ReadMultibend(self, files):
-
-        """Read multibend file and append parameters to database"""
-
+        """Reads a multibend file and appends parameters to database"""
         ref = re.compile("Reference base-pair:")
         start = re.compile("index  bp-step")
-        readfile = file(files, 'r')
-        lines = readfile.readlines()
-        linecount = 1
-        countstart = []
-        for line in lines:
-            line = line.strip()
-            result1 = ref.match(line)
-            result2 = start.match(line)
-            if result1:
-                refbp = float(line.split()[2])
-            elif result2:
-                bendlines = self._ReadTable(linenr=len(countstart), outfile=lines)
-            linecount += 1
-            countstart.append(linecount)
+        with open(files) as readfile:
+            lines = readfile.readlines()
+            linecount = 1
+            countstart = []
+            for line in lines:
+                line = line.strip()
+                result1 = ref.match(line)
+                result2 = start.match(line)
+                if result1:
+                    refbp = float(line.split()[2])
+                elif result2:
+                    bendlines = self._ReadTable(linenr=len(countstart), outfile=lines)
+                linecount += 1
+                countstart.append(linecount)
 
-        # bendlines.insert(0,([0.00001]*17))
+            # bendlines.insert(0,([0.00001]*17))
 
-        lib = {}
-        for n in range(17):
-            lib[n] = []
-        for lines in bendlines:
-            for value in range(17):
-                try:
-                    lib[value].append(transform_dash(lines[value]))
-                except:
-                    lib[value].append(lines[value])
-        self.bendref = DatabaseDeamon()
-        self.bendref.Load('refbp', refbp)
-        self.bendref.Load('globbend', mean(lib[7]))
-        self.bendref.Load('globbendsd', std(lib[7]))
-        self.bendref.Load('sequence', lib[1])
-        self.bendref.Load('fractilt', lib[3])
-        self.bendref.Load('fractiltsd', lib[4])
-        self.bendref.Load('fracroll', lib[5])
-        self.bendref.Load('fracrollsd', lib[6])
-        self.bendref.Load('bpangle', lib[7])
-        self.bendref.Load('bpanglesd', lib[8])
-        self.bendref.Load('orient', lib[9])
-        self.bendref.Load('orientsd', lib[10])
-        self.bendref.Load('gtilt', lib[11])
-        self.bendref.Load('gtiltsd', lib[12])
-        self.bendref.Load('groll', lib[13])
-        self.bendref.Load('grollsd', lib[14])
-        self.bendref.Load('acctwist', lib[15])
-        self.bendref.Load('acctwistsd', lib[16])
-        self.bendref.Load('globorient', mean(lib[9]))
-        self.bendref.Load('globorientsd', std(lib[9]))
+            lib = {}
+            for n in range(17):
+                lib[n] = []
+            for lines in bendlines:
+                for value in range(17):
+                    try:
+                        lib[value].append(transform_dash(lines[value]))
+                    except:
+                        lib[value].append(lines[value])
+            self.bendref = DatabaseDeamon()
+            self.bendref.Load('refbp', refbp)
+            self.bendref.Load('globbend', mean(lib[7]))
+            self.bendref.Load('globbendsd', std(lib[7]))
+            self.bendref.Load('sequence', lib[1])
+            self.bendref.Load('fractilt', lib[3])
+            self.bendref.Load('fractiltsd', lib[4])
+            self.bendref.Load('fracroll', lib[5])
+            self.bendref.Load('fracrollsd', lib[6])
+            self.bendref.Load('bpangle', lib[7])
+            self.bendref.Load('bpanglesd', lib[8])
+            self.bendref.Load('orient', lib[9])
+            self.bendref.Load('orientsd', lib[10])
+            self.bendref.Load('gtilt', lib[11])
+            self.bendref.Load('gtiltsd', lib[12])
+            self.bendref.Load('groll', lib[13])
+            self.bendref.Load('grollsd', lib[14])
+            self.bendref.Load('acctwist', lib[15])
+            self.bendref.Load('acctwistsd', lib[16])
+            self.bendref.Load('globorient', mean(lib[9]))
+            self.bendref.Load('globorientsd', std(lib[9]))
 
-        del bendlines
-        lib.clear()
+            del bendlines
+            lib.clear()
 
     def ReadMultiout(self, files):
 
@@ -1156,150 +1137,149 @@ class ModelNucleicAcids:
 
         # Initiate summery file with data of all modeld structures
         make_backup("modelsummery.txt")
-        outfile = file("modelsummery.txt", "w")
-        outfile.write("***************************************************************************************\n")
-        outfile.write("Summery file generated nucleic acid models parameter files\n")
-        outfile.write("Date/time: %s\n" % ctime())
-        outfile.write("***************************************************************************************\n")
-        outfile.write("\nUsed parameters\n")
-        seq = ""
-        for n in self.baseparameter['sequence']:
-            seq = seq + n[0] + " "
-        outfile.write(" - Nucleic acid sequence: %s\n" % seq)
-        outfile.write(" - Number of models: %i\n" % self.paramdict['number'])
-        outfile.write(" - Global reference frame: %i\n" % self.paramdict['refbp'])
-        outfile.write(
-            " - Zone over witch to bend: start %i, end %i\n" % (self.paramdict['startbp'], self.paramdict['endbp']))
-        outfile.write(" - Global nucleic acid bending range: %1.1f to %1.1f degrees\n" % (
-        self.paramdict['minangle'][0], self.paramdict['maxangle'][0]))
-        outfile.write(" - Global nucleic acid orientation range: %1.1f to %1.1f degrees\n" % (
-        self.paramdict['minorient'][0], self.paramdict['maxorient'][0]))
-        outfile.write(" - Global tolerance set to: %1.1f\n" % self.paramdict['gltolerance'])
-        outfile.write(" - Global smoothing set to: %1.1f\n" % self.paramdict['glsmoothing'])
-        outfile.write(
-            "\n - Twist variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], TWISTSCALE))
-        outfile.write(
-            " - Roll variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], ROLLSCALE))
-        outfile.write(
-            " - Tilt variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], TILTSCALE))
-        outfile.write(
-            " - Rise variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], RISESCALE))
-        outfile.write(
-            " - Slide variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], SLIDESCALE))
-        outfile.write(
-            " - Shift variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], SHIFTSCALE))
-        outfile.write(
-            "\n - Shear variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['lcvariance'], SHEARSCALE))
-        outfile.write(
-            " - Stretch variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], STRETCHSCALE))
-        outfile.write(
-            " - Stagger variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], STAGGERSCALE))
-        outfile.write(
-            " - Buckle variance set to: %1.1f    scale: %1.1f\n" % (self.paramdict['lcvariance'], BUCKLESCALE))
-        outfile.write(
-            " - Prop-Tw variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], PROPTWSCALE))
-        outfile.write(
-            " - Opening variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], OPENINGSCALE))
-        outfile.write("\nStructure         GL bend         GL orient\n")
-
-        # Step 1. Make Swap Database. All calculations will be done on this database and exported as a new parameter file
-        self._MakeSwapDatabase(self.baseparameter['sequence'])
-
-        # Start modeling
-        struc = 1
-
-        # Step 2. Generate smoothly bend global starting conformations
-        anglematrix = self._MakeArray(minl=self.paramdict['minangle'], maxl=self.paramdict['maxangle'],
-                                      step=self.paramdict['anglestep'])
-        orientmatrix = self._MakeArray(minl=self.paramdict['minorient'], maxl=self.paramdict['maxorient'],
-                                       step=self.paramdict['orientstep'], nondiv=True)
-
-        print("--> Start generation of parameter files")
-        models = self._LimitModels(anglematrix, orientmatrix)
-
-        for model in models:
-            # Always regenerate the Swap Database
-            for parameters in BASEPAIRS + BASEPAIR_STEPS:
-                self.swapdatabase.Update(parameters, deepcopy(self.baseparameter[parameters]))
-
-            # Add custom values for base-pair and base-pair step parameters to swapdatabase
-            for param in BASEPAIRS + BASEPAIR_STEPS:
-                if param in self.paramdict:
-                    arr = [self.paramdict[param]] * len(self.swapdatabase['sequence'])
-                    self.swapdatabase.Update(param, arr)
-
-            acctw = AccTwist(self.paramdict['refbp'], self.swapdatabase['twist'])
-            directions = TwistCorrect(acctw, model[1])
-
-            vector = []
-            for direction in range(len(directions)):
-                frac = (DegreeToUnitvec(directions[direction]))
-                vector.append(AngleVector(model[0][direction], frac[0], frac[1]))
-
-            locroll = []
-            loctilt = []
-            for n in vector:
-                locroll.append(n[1])
-                loctilt.append(n[0])
-
-            self.swapdatabase.Update('tilt', loctilt)
-            self.swapdatabase.Update('roll', locroll)
-
-            # Step 3. Introducing variation in base-pair step parameters
-            vartwist = self._GlobalVariation(self.swapdatabase['twist'], self.baseref['twist'],
-                                             self.baseref['twistsd'], self.paramdict['glvariance'], TWISTSCALE,
-                                             smooth=self.paramdict['glsmoothing'])
-            varroll = self._GlobalVariation(self.swapdatabase['roll'], self.baseref['roll'], self.baseref['rollsd'],
-                                            self.paramdict['glvariance'], ROLLSCALE,
-                                            smooth=self.paramdict['glsmoothing'])
-            vartilt = self._GlobalVariation(self.swapdatabase['tilt'], self.baseref['tilt'], self.baseref['tiltsd'],
-                                            self.paramdict['glvariance'], TILTSCALE,
-                                            smooth=self.paramdict['glsmoothing'])
-            varrise = self._GlobalVariation(self.swapdatabase['rise'], self.baseref['rise'], self.baseref['risesd'],
-                                            self.paramdict['glvariance'], RISESCALE)
-            varshift = self._GlobalVariation(self.swapdatabase['shift'], self.baseref['shift'],
-                                             self.baseref['shiftsd'], self.paramdict['glvariance'], SHIFTSCALE)
-            varslide = self._GlobalVariation(self.swapdatabase['slide'], self.baseref['slide'],
-                                             self.baseref['slidesd'], self.paramdict['glvariance'], SLIDESCALE)
-
-            self.swapdatabase.Update('twist', vartwist)
-            self.swapdatabase.Update('roll', varroll)
-            self.swapdatabase.Update('tilt', vartilt)
-            self.swapdatabase.Update('rise', varrise)
-            self.swapdatabase.Update('shift', varshift)
-            self.swapdatabase.Update('slide', varslide)
-
-            # Step 4. Introduce variation in base-pair parameters
-            varshear = self._GlobalVariation(self.swapdatabase['shear'], self.baseref['shear'],
-                                             self.baseref['shearsd'], self.paramdict['lcvariance'], SHEARSCALE)
-            varstretch = self._GlobalVariation(self.swapdatabase['stretch'], self.baseref['stretch'],
-                                               self.baseref['stretchsd'], self.paramdict['lcvariance'],
-                                               STRETCHSCALE)
-            varstagger = self._GlobalVariation(self.swapdatabase['stagger'], self.baseref['stagger'],
-                                               self.baseref['staggersd'], self.paramdict['lcvariance'],
-                                               STAGGERSCALE)
-            varbuckle = self._GlobalVariation(self.swapdatabase['buckle'], self.baseref['buckle'],
-                                              self.baseref['bucklesd'], self.paramdict['lcvariance'], BUCKLESCALE)
-            varproptw = self._GlobalVariation(self.swapdatabase['proptw'], self.baseref['proptw'],
-                                              self.baseref['proptwsd'], self.paramdict['lcvariance'], PROPTWSCALE)
-            varopening = self._GlobalVariation(self.swapdatabase['opening'], self.baseref['opening'],
-                                               self.baseref['openingsd'], self.paramdict['lcvariance'],
-                                               OPENINGSCALE)
-
-            self.swapdatabase.Update('shear', varshear)
-            self.swapdatabase.Update('stretch', varstretch)
-            self.swapdatabase.Update('stagger', varstagger)
-            self.swapdatabase.Update('buckle', varbuckle)
-            self.swapdatabase.Update('proptw', varproptw)
-            self.swapdatabase.Update('opening', varopening)
-
-            # Step 5. Write new parameter file
+        with open("modelsummery.txt", "w") as outfile:
+            outfile.write("***************************************************************************************\n")
+            outfile.write("Summery file generated nucleic acid models parameter files\n")
+            outfile.write("Date/time: %s\n" % ctime())
+            outfile.write("***************************************************************************************\n")
+            outfile.write("\nUsed parameters\n")
+            seq = ""
+            for n in self.baseparameter['sequence']:
+                seq = seq + n[0] + " "
+            outfile.write(" - Nucleic acid sequence: %s\n" % seq)
+            outfile.write(" - Number of models: %i\n" % self.paramdict['number'])
+            outfile.write(" - Global reference frame: %i\n" % self.paramdict['refbp'])
             outfile.write(
-                "%s      %1.1f      %1.1f\n" % (self.paramdict['name'] + str(struc), sum(model[0]), mean(model[1])))
-            WritePar(self.swapdatabase, self.paramdict['name'] + str(struc), self.paramdict['verbose'])
-            struc += 1
+                " - Zone over witch to bend: start %i, end %i\n" % (self.paramdict['startbp'], self.paramdict['endbp']))
+            outfile.write(" - Global nucleic acid bending range: %1.1f to %1.1f degrees\n" % (
+            self.paramdict['minangle'][0], self.paramdict['maxangle'][0]))
+            outfile.write(" - Global nucleic acid orientation range: %1.1f to %1.1f degrees\n" % (
+            self.paramdict['minorient'][0], self.paramdict['maxorient'][0]))
+            outfile.write(" - Global tolerance set to: %1.1f\n" % self.paramdict['gltolerance'])
+            outfile.write(" - Global smoothing set to: %1.1f\n" % self.paramdict['glsmoothing'])
+            outfile.write(
+                "\n - Twist variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], TWISTSCALE))
+            outfile.write(
+                " - Roll variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], ROLLSCALE))
+            outfile.write(
+                " - Tilt variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], TILTSCALE))
+            outfile.write(
+                " - Rise variance set to: %1.1f      scale: %1.1f\n" % (self.paramdict['glvariance'], RISESCALE))
+            outfile.write(
+                " - Slide variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], SLIDESCALE))
+            outfile.write(
+                " - Shift variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['glvariance'], SHIFTSCALE))
+            outfile.write(
+                "\n - Shear variance set to: %1.1f     scale: %1.1f\n" % (self.paramdict['lcvariance'], SHEARSCALE))
+            outfile.write(
+                " - Stretch variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], STRETCHSCALE))
+            outfile.write(
+                " - Stagger variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], STAGGERSCALE))
+            outfile.write(
+                " - Buckle variance set to: %1.1f    scale: %1.1f\n" % (self.paramdict['lcvariance'], BUCKLESCALE))
+            outfile.write(
+                " - Prop-Tw variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], PROPTWSCALE))
+            outfile.write(
+                " - Opening variance set to: %1.1f   scale: %1.1f\n" % (self.paramdict['lcvariance'], OPENINGSCALE))
+            outfile.write("\nStructure         GL bend         GL orient\n")
 
-        outfile.close()
+            # Step 1. Make Swap Database. All calculations will be done on this database and exported as a new parameter file
+            self._MakeSwapDatabase(self.baseparameter['sequence'])
+
+            # Start modeling
+            struc = 1
+
+            # Step 2. Generate smoothly bend global starting conformations
+            anglematrix = self._MakeArray(minl=self.paramdict['minangle'], maxl=self.paramdict['maxangle'],
+                                          step=self.paramdict['anglestep'])
+            orientmatrix = self._MakeArray(minl=self.paramdict['minorient'], maxl=self.paramdict['maxorient'],
+                                           step=self.paramdict['orientstep'], nondiv=True)
+
+            print("--> Start generation of parameter files")
+            models = self._LimitModels(anglematrix, orientmatrix)
+
+            for model in models:
+                # Always regenerate the Swap Database
+                for parameters in BASEPAIRS + BASEPAIR_STEPS:
+                    self.swapdatabase.Update(parameters, deepcopy(self.baseparameter[parameters]))
+
+                # Add custom values for base-pair and base-pair step parameters to swapdatabase
+                for param in BASEPAIRS + BASEPAIR_STEPS:
+                    if param in self.paramdict:
+                        arr = [self.paramdict[param]] * len(self.swapdatabase['sequence'])
+                        self.swapdatabase.Update(param, arr)
+
+                acctw = AccTwist(self.paramdict['refbp'], self.swapdatabase['twist'])
+                directions = TwistCorrect(acctw, model[1])
+
+                vector = []
+                for direction in range(len(directions)):
+                    frac = (DegreeToUnitvec(directions[direction]))
+                    vector.append(AngleVector(model[0][direction], frac[0], frac[1]))
+
+                locroll = []
+                loctilt = []
+                for n in vector:
+                    locroll.append(n[1])
+                    loctilt.append(n[0])
+
+                self.swapdatabase.Update('tilt', loctilt)
+                self.swapdatabase.Update('roll', locroll)
+
+                # Step 3. Introducing variation in base-pair step parameters
+                vartwist = self._GlobalVariation(self.swapdatabase['twist'], self.baseref['twist'],
+                                                 self.baseref['twistsd'], self.paramdict['glvariance'], TWISTSCALE,
+                                                 smooth=self.paramdict['glsmoothing'])
+                varroll = self._GlobalVariation(self.swapdatabase['roll'], self.baseref['roll'], self.baseref['rollsd'],
+                                                self.paramdict['glvariance'], ROLLSCALE,
+                                                smooth=self.paramdict['glsmoothing'])
+                vartilt = self._GlobalVariation(self.swapdatabase['tilt'], self.baseref['tilt'], self.baseref['tiltsd'],
+                                                self.paramdict['glvariance'], TILTSCALE,
+                                                smooth=self.paramdict['glsmoothing'])
+                varrise = self._GlobalVariation(self.swapdatabase['rise'], self.baseref['rise'], self.baseref['risesd'],
+                                                self.paramdict['glvariance'], RISESCALE)
+                varshift = self._GlobalVariation(self.swapdatabase['shift'], self.baseref['shift'],
+                                                 self.baseref['shiftsd'], self.paramdict['glvariance'], SHIFTSCALE)
+                varslide = self._GlobalVariation(self.swapdatabase['slide'], self.baseref['slide'],
+                                                 self.baseref['slidesd'], self.paramdict['glvariance'], SLIDESCALE)
+
+                self.swapdatabase.Update('twist', vartwist)
+                self.swapdatabase.Update('roll', varroll)
+                self.swapdatabase.Update('tilt', vartilt)
+                self.swapdatabase.Update('rise', varrise)
+                self.swapdatabase.Update('shift', varshift)
+                self.swapdatabase.Update('slide', varslide)
+
+                # Step 4. Introduce variation in base-pair parameters
+                varshear = self._GlobalVariation(self.swapdatabase['shear'], self.baseref['shear'],
+                                                 self.baseref['shearsd'], self.paramdict['lcvariance'], SHEARSCALE)
+                varstretch = self._GlobalVariation(self.swapdatabase['stretch'], self.baseref['stretch'],
+                                                   self.baseref['stretchsd'], self.paramdict['lcvariance'],
+                                                   STRETCHSCALE)
+                varstagger = self._GlobalVariation(self.swapdatabase['stagger'], self.baseref['stagger'],
+                                                   self.baseref['staggersd'], self.paramdict['lcvariance'],
+                                                   STAGGERSCALE)
+                varbuckle = self._GlobalVariation(self.swapdatabase['buckle'], self.baseref['buckle'],
+                                                  self.baseref['bucklesd'], self.paramdict['lcvariance'], BUCKLESCALE)
+                varproptw = self._GlobalVariation(self.swapdatabase['proptw'], self.baseref['proptw'],
+                                                  self.baseref['proptwsd'], self.paramdict['lcvariance'], PROPTWSCALE)
+                varopening = self._GlobalVariation(self.swapdatabase['opening'], self.baseref['opening'],
+                                                   self.baseref['openingsd'], self.paramdict['lcvariance'],
+                                                   OPENINGSCALE)
+
+                self.swapdatabase.Update('shear', varshear)
+                self.swapdatabase.Update('stretch', varstretch)
+                self.swapdatabase.Update('stagger', varstagger)
+                self.swapdatabase.Update('buckle', varbuckle)
+                self.swapdatabase.Update('proptw', varproptw)
+                self.swapdatabase.Update('opening', varopening)
+
+                # Step 5. Write new parameter file
+                outfile.write(
+                    "%s      %1.1f      %1.1f\n" % (self.paramdict['name'] + str(struc), sum(model[0]), mean(model[1])))
+                WritePar(self.swapdatabase, self.paramdict['name'] + str(struc), self.paramdict['verbose'])
+                struc += 1
+
 
     def Manualmodel(self):
 

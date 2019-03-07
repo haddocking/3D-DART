@@ -2,27 +2,27 @@
 
 import re
 import math
-import numpy
+import numpy as np
 from dart.system.Constants import BASELIST3_T, BASELIST1_T
 
 
 def length(u):
 	"""Calculates the length of u"""
-	return math.sqrt(numpy.dot(u, u))
+	return math.sqrt(np.dot(u, u))
 
 
 def normalize(u):
 	"""Returns the normalized vector along u"""
-	return u/math.sqrt(numpy.dot(u, u))
+	return u/math.sqrt(np.dot(u, u))
 
 
 def cross(u, v):
 	"""Cross product of u and v:
     Cross[u,v] = {-u3 v2 + u2 v3, u3 v1 - u1 v3, -u2 v1 + u1 v2}
 	"""
-	return numpy.array([ u[1]*v[2] - u[2]*v[1],
-                       u[2]*v[0] - u[0]*v[2],
-                       u[0]*v[1] - u[1]*v[0] ], float)
+	return np.array([ u[1]*v[2] - u[2]*v[1],
+                      u[2]*v[0] - u[0]*v[2],
+                      u[0]*v[1] - u[1]*v[0] ], float)
 
 
 def rmatrix(alpha, beta, gamma):
@@ -35,46 +35,46 @@ def rmatrix(alpha, beta, gamma):
 	sinB = math.sin(beta)
 	sinG = math.sin(gamma)
 
-	R = numpy.array(
+	R = np.array(
             [[cosB*cosG, cosG*sinA*sinB-cosA*sinG, cosA*cosG*sinB+sinA*sinG],
              [cosB*sinG, cosA*cosG+sinA*sinB*sinG, cosA*sinB*sinG-cosG*sinA ],
              [-sinB,     cosB*sinA,                cosA*cosB ]], float)
 
-	assert numpy.allclose(numpy.linalg.determinant(R), 1.0)
+	assert np.allclose(np.linalg.determinant(R), 1.0)
 
 	return R
 
 
 def rmatrixu(u, theta):
 	"""Returns a rotation matrix caused by a right hand rotation of theta radians around vector u."""
-	if numpy.allclose(theta, 0.0) or numpy.allclose(numpy.dot(u,u), 0.0):
-		return numpy.identity(3, float)
+	if np.allclose(theta, 0.0) or np.allclose(np.dot(u,u), 0.0):
+		return np.identity(3, float)
 
 	x, y, z = normalize(u)
 	sa = math.sin(theta)
 	ca = math.cos(theta)
 
-	R = numpy.array(
+	R = np.array(
             [[1.0+(1.0-ca)*(x*x-1.0), -z*sa+(1.0-ca)*x*y,     y*sa+(1.0-ca)*x*z],
              [z*sa+(1.0-ca)*x*y,      1.0+(1.0-ca)*(y*y-1.0), -x*sa+(1.0-ca)*y*z],
              [-y*sa+(1.0-ca)*x*z,     x*sa+(1.0-ca)*y*z,      1.0+(1.0-ca)*(z*z-1.0)]], float)
 
 	try:
-		assert numpy.allclose(numpy.linalg.determinant(R), 1.0)
+		assert np.allclose(np.linalg.determinant(R), 1.0)
 	except AssertionError:
-		print("rmatrixu(%s, %f) determinant(R)=%f" % (u, theta, numpy.linalg.determinant(R)))
+		print("rmatrixu(%s, %f) determinant(R)=%f" % (u, theta, np.linalg.determinant(R)))
 		raise
 	return R
 
 
 def dmatrix(alpha, beta, gamma):
 	"""Returns the displacement matrix based on rotation about Euler angles alpha, beta, and gamma"""
-	return rmatrix(alpha, beta, gamma) - numpy.identity(3, float)
+	return rmatrix(alpha, beta, gamma) - np.identity(3, float)
 
 
 def dmatrixu(u, theta):
 	"""Returns a displacement matrix caused by a right hand rotation of theta radians around vector u"""
-	return rmatrixu(u, theta) - numpy.identity(3, float)
+	return rmatrixu(u, theta) - np.identity(3, float)
 
 
 def rmatrixz(vec):
@@ -86,22 +86,22 @@ def rmatrixz(vec):
 	d = math.sqrt(u*u + v*v)
 
 	if d != 0.0:
-		Rxz = numpy.array([ [  u/d, v/d,  0.0 ],
+		Rxz = np.array([ [  u/d, v/d,  0.0 ],
 		           	[ -v/d, u/d,  0.0 ],
 		           	[  0.0, 0.0,  1.0 ] ], float)
 	else:
-		Rxz = numpy.identity(3, float)
+		Rxz = np.identity(3, float)
 
-	Rxz2z = numpy.array([ [   w, 0.0,    -d],
+	Rxz2z = np.array([ [   w, 0.0,    -d],
                         [ 0.0, 1.0,   0.0],
                         [   d, 0.0,     w] ], float)
 
-	R = numpy.matrixmultiply(Rxz2z, Rxz)
+	R = np.matrixmultiply(Rxz2z, Rxz)
 
 	try:
-		assert numpy.allclose(numpy.linalg.determinant(R), 1.0)
+		assert np.allclose(np.linalg.determinant(R), 1.0)
 	except AssertionError:
-		print("rmatrixz(%s) determinant(R)=%f" % (vec, numpy.linalg.determinant(R)))
+		print("rmatrixz(%s) determinant(R)=%f" % (vec, np.linalg.determinant(R)))
 		raise
 	return R
 
@@ -124,7 +124,7 @@ def calc_angle(a1, a2, a3):
 	a23 = a3.position - a2.position
 	a23 = a23 / (length(a23))
 
-	return math.acos(numpy.dot(a21, a23))
+	return math.acos(np.dot(a21, a23))
 
 
 def calc_torsion_angle(a1, a2, a3, a4):
@@ -136,15 +136,15 @@ def calc_torsion_angle(a1, a2, a3, a4):
 	a23 = a3.position - a2.position
 	a34 = a4.position - a3.position
 
-	n12 = cross(a12, a23)
-	n34 = cross(a23, a34)
+	n12 = np.cross(a12, a23)
+	n34 = np.cross(a23, a34)
 
 	n12 = n12 / length(n12)
 	n34 = n34 / length(n34)
 
-	cross_n12_n34  = cross(n12, n34)
+	cross_n12_n34  = np.cross(n12, n34)
 	direction      = cross_n12_n34 * a23
-	scalar_product = numpy.dot(n12, n34)
+	scalar_product = np.dot(n12, n34)
 
 	if scalar_product > 1.0:
 		scalar_product = 1.0
@@ -187,8 +187,11 @@ def DegreeToUnitvec(angle):
 def AngleVector(angle, rcont, tcont):
 	"""Constructs vector of global roll and tilt from global angle and contribution of roll and tilt to this angle"""
 	vector = []
-	vector.append((sqrt((pow(angle,2))*abs(rcont)))*cmp(rcont,0))
-	vector.append((sqrt((pow(angle,2))*abs(tcont)))*cmp(tcont,0))
+	# Fix as seen in UnitvecToDegree
+	crcont = (rcont>0)-(rcont<0) # cmp(rcont,0)
+	ctcont = (tcont>0)-(tcont<0) # cmp(tcont,0)
+	vector.append((math.sqrt((pow(angle,2))*abs(rcont)))*crcont)
+	vector.append((math.sqrt((pow(angle,2))*abs(tcont)))*ctcont)
 	return vector
 
 
@@ -217,11 +220,11 @@ def AccTwist(refbp, twist):
 		v1dw[0] = 0.0
 
 		v1up.reverse()
-		v1arrup = numpy.array(v1up)
-		accup = numpy.add.accumulate(v1arrup)
+		v1arrup = np.array(v1up)
+		accup = np.add.accumulate(v1arrup)
 
-		v1arrdw = numpy.array(v1dw)
-		accdw = numpy.subtract.accumulate(v1arrdw)
+		v1arrdw = np.array(v1dw)
+		accdw = np.subtract.accumulate(v1arrdw)
 
 		v1up = accup.tolist()
 		v1dw = accdw.tolist()
@@ -240,11 +243,11 @@ def AccTwist(refbp, twist):
 		v1dw.insert(0,0.0)
 
 		v1up.reverse()
-		v1arrup = numpy.array(v1up)
-		accup = numpy.add.accumulate(v1arrup)
+		v1arrup = np.array(v1up)
+		accup = np.add.accumulate(v1arrup)
 
-		v1arrdw = numpy.array(v1dw)
-		accdw = numpy.subtract.accumulate(v1arrdw)
+		v1arrdw = np.array(v1dw)
+		accdw = np.subtract.accumulate(v1arrdw)
 
 		v1up = accup.tolist()
 		v1dw = accdw.tolist()
@@ -278,9 +281,9 @@ def CalculateDistance(vector1, vector2):
 
 def Angle(v1, v2):
 	"""Calculates the angle of vector from two vectors"""
-	a = numpy.array(v1)
-	b = numpy.array(v2)
-	return numpy.sqrt((numpy.power(a,2)) + (numpy.power(b,2)))
+	a = np.array(v1)
+	b = np.array(v2)
+	return np.sqrt((np.power(a,2)) + (np.power(b,2)))
 
 
 class ConvertSeq:
