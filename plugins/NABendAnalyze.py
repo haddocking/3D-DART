@@ -74,7 +74,7 @@ def PluginCore(paramdict, inputlist):
 	if paramdict['refbp']:
 		print "    * Using predefined reference base-pair:", paramdict['refbp']
 	if paramdict['zone']:
-		print("    * Using predefined zone over whitch to calculate the bend angle: %s" % paramdict['zone'])
+		print "    * Using predefined zone over whitch to calculate the bend angle: %s" % paramdict['zone']
 	
 	bend = MeasureBend(refbp=paramdict['refbp'], zone=paramdict['zone'], verbose=paramdict['verbose'])	
 
@@ -85,12 +85,13 @@ def PluginCore(paramdict, inputlist):
 			bend.CalcGlobalBend(multiana=paramdict['multiana'])
 		else:
 			bend.CalcGlobalBend(multiana=False)
-	except:
+	except Exception, err:
 		try:
 			bend.ReadParfiles(files=checked.checkedinput['.par'])
 			bend.CalcGlobalBend(multiana=False)
-		except e:
+		except Exception, e:
 			print "    * ERROR: No valid input found: {}".format(e)
+			raise e
 			sys.exit(0)
 	
 #================================================================================================================================#
@@ -328,7 +329,7 @@ class MeasureBend:
 		full = len(self.basechainlib[self.chainid][0])
 		count = 1
 		while count < full:
-			if self.basechainlib[self.chainid][0][count] == dupl[3][count]:
+			if self.basechainlib[self.chainid][0][count-1] == dupl[3][count-1]:
 				pass
 			else:
 				dupl[0].insert(count,"X")
@@ -336,8 +337,8 @@ class MeasureBend:
 				dupl[2].insert(count,"X")
 				dupl[3].insert(count,"X")
 				dupl[4].insert(count,"X")
-			count = count +1	
-		
+			count += 1	
+
 		newlist = []
 		for na in range(len(dupl[1])):
 			try:	
@@ -605,7 +606,7 @@ class MeasureBend:
 		
 		"""Print all data to file"""
 		
-		print("    * Writing Multi-bend analysis data to file: multibend.stat")
+		print "    * Writing Multi-bend analysis data to file: multibend.stat"
 		
 		if self.verbose == True:
 			outfile = sys.stdout 
@@ -654,7 +655,7 @@ class MeasureBend:
 		
 		"""Print all data to file"""
 		
-		print("    * Writing global bend analysis data to file: %s" % os.path.splitext(os.path.basename(files))[0]+'.bend')
+		print "    * Writing global bend analysis data to file: %s" % os.path.splitext(os.path.basename(files))[0]+'.bend'
 		
 		if self.verbose == True:
 			outfile = sys.stdout 
@@ -809,7 +810,7 @@ class MeasureBend:
 		bpstep = re.compile("step       Shift     Slide      Rise      Tilt      Roll     Twist")
 		
 		for infile in files:
-			print("    * Running global bend analysis on file: %s" % os.path.basename(infile))
+			print "    * Running global bend analysis on file: %s" % os.path.basename(infile)
 			readfile = file(infile,'r')
 			lines = readfile.readlines()	
 			linecount = 1
@@ -838,7 +839,7 @@ class MeasureBend:
 		zero = float(0.0001)
 		
 		for infile in files:
-			print("    * Running global bend analysis on file: %s" % os.path.basename(infile))
+			print "    * Running global bend analysis on file: %s" % os.path.basename(infile)
 			self.bpstep[infile] = []
 			self.pairs[infile] = []
 			readfile = file(infile, 'r')
@@ -874,7 +875,6 @@ class MeasureBend:
 	def CalcGlobalBend(self,multiana):
 	
 		"""Control module"""
-		
 		for files in self.pairs:
 			self._CalculateCore(files)	
 			self._WriteBendFile(files)

@@ -64,12 +64,12 @@ def SystemChecks():
 		import Numeric
 		print "   * Importing Numeric package succesful"
 	except:
-		print "   * Could not import Numeric package try numpy"
+		print "   * Could not import Numeric package trying NumPy"
 		try:
 			import numpy as Numeric
-			print "   * Importing numpy package succesfull"
+			print "   * Importing NumPy package succesfull"
 		except:
-			print "   * Could not import Numeric or numpy package"
+			print "   * Could not import Numeric or NumPy package"
 			ExitMessage()
 	
 	"""General messages"""

@@ -126,7 +126,6 @@ class InputOutputControl:
 		output_true = []
 		for a in files:
 			output_true.append(os.path.join(os.getcwd(),a))
-
 		return output_true
 			
 	def DictToList(self):

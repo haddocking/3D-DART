@@ -150,7 +150,7 @@ class PluginExecutor:
 		"""Print data as info to user"""
 		print "--> Metadata belonging to plugin:", plugin
 		for data in metadata:
-			print("    * Plugin %s: %s" % (data,metadata[data]))
+			print "    * Plugin %s: %s" % (data,metadata[data])
 		
 		return metadata
 
@@ -183,7 +183,7 @@ class PluginExecutor:
 		if paramdict['useplugin']:
 			print "--> Variables defined for executing the plugin core:"
 			for parameter in paramdict:
-				print("    * Variable %s: %s" % (parameter,paramdict[parameter]))
+				print "    * Variable %s: %s" % (parameter,paramdict[parameter])
 		else:
 			print "--> Use this plugin set to: False"		
 		
