@@ -289,18 +289,17 @@ class X3DNAanalyze:
 				outfile = basename+".inp"
 				files2 = os.path.split(files)[-1]
 				if files != files2:
-				   os.system("ln -s %s" % files)
+				   os.system("/bin/ln -s %s" % files)
 				   files = files2
 				cmd = "find_pair "+(self.optionstring)+" "+(files)+" "+(outfile)
 				output = commands.getoutput(cmd)
-				print output
 			elif self.paramdict['curvesinput'] == True:
 				print "--> Getting Curves input for the file", files
 				basename,extension = os.path.splitext(files)
 				outfile = basename+".curves"
 				files2 = os.path.split(files)[-1]
 				if files != files2:
-				   os.system("ln -s %s" % files)
+				   os.system("/bin/ln -s %s" % files)
 				   files = files2
 				cmd = "find_pair "+(self.optionstring)+" "+(files)+" "+(outfile)
 				os.system(cmd)
