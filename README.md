@@ -24,6 +24,6 @@ In case you encounter unexpected errors please look into the log file.
 
 If you use 3D-DART please cite:
 
-	M. van Dijk and A.M.J.J. Bonvin (2009) "3D-DART: a DNA structure modelling server", Nucl. Acids Res.
-    37 (Web Server Issue):W235-W239, [doi:10.1093/nar/gkp287](https://doi.org/10.1093/nar/gkp287)
+M. van Dijk and A.M.J.J. Bonvin (2009) "3D-DART: a DNA structure modelling server", Nucl. Acids Res.
+37 (Web Server Issue):W235-W239, [doi:10.1093/nar/gkp287](https://doi.org/10.1093/nar/gkp287)
 
