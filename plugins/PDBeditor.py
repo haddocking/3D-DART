@@ -567,21 +567,22 @@ class PDBeditor:
         seq3 = []
 
         for resid1 in self.resname:
-            try:
-                resid3 = NAres3[
-                    NAres1.index(resid1.upper())]  # If NAresid is one-letter code, convert to three-letter code
-                seq3.append(resid3)
-            except ValueError, err:
-                if resid1.upper() in AAres3:  # If resid is amino-acid three letter code, just append
-                    seq3.append(resid1.upper())  # Amino-acid one letter code in PDB not accepted(expected)
-                elif resid1.upper() == 'HOH ':  # Waters are neglected, just append.
-                    seq3.append(resid1.upper())
-                elif resid1.upper() in NAres3:  # If NAresid allready in three letter code, just append
-                    seq3.append(resid1.upper())
-                else:
-                    print "      - WARNING: no match for residue: %s" % (
-                    resid1)  # If not of the above, raise exception.
-                    seq3.append(resid1.upper())
+            if resid1:
+                try:
+                    resid3 = NAres3[
+                        NAres1.index(resid1.upper())]  # If NAresid is one-letter code, convert to three-letter code
+                    seq3.append(resid3)
+                except ValueError, err:
+                    if resid1.upper() in AAres3:  # If resid is amino-acid three letter code, just append
+                        seq3.append(resid1.upper())  # Amino-acid one letter code in PDB not accepted(expected)
+                    elif resid1.upper() == 'HOH ':  # Waters are neglected, just append.
+                        seq3.append(resid1.upper())
+                    elif resid1.upper() in NAres3:  # If NAresid allready in three letter code, just append
+                        seq3.append(resid1.upper())
+                    else:
+                        print "      - WARNING: no match for residue: %s" % (
+                        resid1)  # If not of the above, raise exception.
+                        seq3.append(resid1.upper())
 
         if len(seq3) == len(self.resname):
             self.resname = seq3
