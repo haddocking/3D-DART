@@ -39,7 +39,7 @@ else:
 	sys.path.append(base)
 
 def PluginXML():
-
+	
 	PluginXML = """ 
 <metadata>
  <name>dna-rna_rstraints.def file generator</name>
@@ -135,14 +135,14 @@ def PluginXML():
  <option type="dih_3_zeta" form="text" text="zeta dihedral C3'-O3'-P-O5'">-150.8</option>
  <option type="dih_3_zetaerr" form="text" text="zeta dihedral C3'-O3'-P-O5' error">50.0</option>
 </parameters>"""
-
+	
 	return PluginXML
 
 def PluginCore(paramdict, inputlist):
-
+	
 	print "--> Generating dna-rna_restraints.def file for use in HADDOCK"
 	print "    * Check input parameters"
-
+	
 	if not paramdict['pickpuck']:
 		valid = False
 		for puck in [1,2,3]:
@@ -151,7 +151,7 @@ def PluginCore(paramdict, inputlist):
 			print "    * WARNING: automatic restraint definition for sugar pucker dihedral angles turned off"
 			print "               but no conformational groups defined. Turn automatic defintion on."
 			paramdict['pickpuck'] = True
-
+	
 	if not paramdict['pickbackdih']:
 		valid = False
 		for dih in [1,2,3]:
@@ -159,8 +159,8 @@ def PluginCore(paramdict, inputlist):
 		if not valid:
 			print "    * WARNING: automatic restraint definition for phosphate backbone dihedral angles turned off"
 			print "               but no conformational groups defined. Turn automatic defintion on."
-			paramdict['pickbackdih'] = True
-
+			paramdict['pickbackdih'] = True		
+	
 	restraints = NArestraints(paramdict)
 	restraints.readpdb(inputlist[0])
 	restraints.writedef()
@@ -170,18 +170,18 @@ def PluginCore(paramdict, inputlist):
 #================================================================================================================================#
 
 class CommandlineOptionParser:
-
+	
 	"""Parses command line arguments using optparse"""
-
+	
 	def __init__(self):
-
+		
 		self.option_dict = {}
 		self.option_dict = self.CommandlineOptionParser()
-
+			
 	def CommandlineOptionParser(self):
-
+	
 		"""Parsing command line arguments"""
-
+	
 		usage = "usage: %prog" + USAGE
 		parser = OptionParser(usage)
 
@@ -197,11 +197,11 @@ class CommandlineOptionParser:
 		parser.add_option( "-k", "--wc_up", action="store", dest="wc_up", default=0.05, help="WC-restraint lower distance limit, default=0.05")
 		parser.add_option( "-l", "--wc_low", action="store", dest="wc_low", default=0.05, help="WC-restraint lower distance limit, default=0.05")
 		parser.add_option( "-m", "--wc_uri_up", action="store", dest="wc_uri_up", default=0.01, help="WC-restraint (uracil) upper distance limit, default=0.01")
-		parser.add_option( "-n", "--wc_uri_low", action="store", dest="wc_uri_low", default=0.01, help="WC-restraint (uracil) lower distance limit, default=0.01")
+		parser.add_option( "-n", "--wc_uri_low", action="store", dest="wc_uri_low", default=0.01, help="WC-restraint (uracil) lower distance limit, default=0.01")		
 		parser.add_option( "-v", "--verbose", action="store_true", dest="verbose", default=False, help="All output to standard output")
-
+		
 		(options, args) = parser.parse_args()
-
+		
 		self.option_dict['input'] = options.inputfile
 		self.option_dict['verbose'] = options.verbose
 		self.option_dict['bpplan'] = options.bpplan
@@ -210,41 +210,41 @@ class CommandlineOptionParser:
 		self.option_dict['pickbacdih'] = options.pickbacdih
 		self.option_dict['c1pick'] = options.c1pick
 		self.option_dict['c1lower'] = options.c1lower
-		self.option_dict['c1upper'] = options.c1upper
-		self.option_dict['wcpairing'] = options.wcpairing
+		self.option_dict['c1upper'] = options.c1upper	
+		self.option_dict['wcpairing'] = options.wcpairing	
 		self.option_dict['wc_up'] = options.wc_up
 		self.option_dict['wc_low'] = options.wc_low
 		self.option_dict['wc_uri_up'] = options.wc_uri_up
-		self.option_dict['wc_uri_low'] = options.wc_uri_low
-
+		self.option_dict['wc_uri_low'] = options.wc_uri_low	
+			
 		if not self.option_dict['input'] == None:
 			parser.remove_option('-f')
 			arg = self.GetFirstArgument(parser, shorta='-f', longa='--file')
 			self.option_dict['input'].append(arg)
 			fullpath = self.GetFullPath(self.option_dict['input'])
 			self.option_dict['input'] = fullpath
-
+			
 		if parser.has_option('-f'):
 			pass
 		else:
 			parser.add_option( "-f", "--file", action="store", dest="dummy2", type="string") #only needs to be here to complete the argument list, not used!
-
+	
 		return self.option_dict
-
+	
 	def GetFullPath(self, inputfiles):
-
+		
 		currdir = os.getcwd()
 		filelist = []
-
+		
 		for files in inputfiles:
 			path = os.path.join(currdir, files)
 			filelist.append(path)
-
+			
 		return filelist
-
+	
 	def GetFirstArgument(self, parser, shorta, longa):
 
-		"""HACK, optparse has difficulties in variable argument lists. The varargs definition solves this but never reports the first
+		"""HACK, optparse has difficulties in variable argument lists. The varargs definition solves this but never reports the first 
 		   argument of the list. This definition hacks this issue"""
 
 		parser.add_option( shorta, longa, action="store", dest="temp", type="string", help="Execute custom workflow assembled on the command line. You can execute a single plugin by typing '-p pluginname' or a sequence of plugins by typing '-p plugin1,plugin2...'")
@@ -252,9 +252,9 @@ class CommandlineOptionParser:
 		(options, args) = parser.parse_args()
 		first_arg = options.temp
 		parser.remove_option(shorta)
-
+		
 		return first_arg
-
+			
 	def varargs(self, option, opt_str, value, parser):
 
 		"""Deals with variable list of command line arguments"""
@@ -274,11 +274,11 @@ class CommandlineOptionParser:
 		setattr(parser.values, option.dest, value)
 
 class NArestraints:
-
+	
 	def __init__(self, paramdict=None):
-
+		
 		self.paramdict = paramdict
-
+		
 		self.segid1 = []
 		self.segid2 = []
 		self.resid1 = []
@@ -286,7 +286,7 @@ class NArestraints:
 		self.resnr1 = []
 		self.resnr2 = []
 		self.seglib = {}
-
+	
 	def getzones(self):
 
 		self.makelib()
@@ -306,7 +306,7 @@ class NArestraints:
 				if n in self.resnr2:
 					self.resnr2.remove(n)
 			self.segid2 = new
-
+			
 	def loop(self,inlist,insegid):
 
 		segid = insegid[0]
@@ -333,33 +333,33 @@ class NArestraints:
 		for n in range(cut,len(insegid)):
 			new.append(insegid[n])
 
-		return tmp,new,segid
+		return tmp,new,segid				
 
 	def makelib(self):
 
 		for segid in self.segid1:
-			if segid not in self.seglib: self.seglib[segid] = []
+			if not self.seglib.has_key(segid): self.seglib[segid] = []
 		for segid in self.segid2:
-			if segid not in self.seglib: self.seglib[segid] = []
-
+			if not self.seglib.has_key(segid): self.seglib[segid] = []
+	
 	def readpdb(self,pdb):
-
+	
 		"""Run 3DNA find_pair on pdb file. Only generate .inp file and pass to 'importinp'"""
-
+	
 		os.system("find_pair -t %s output.inp" % pdb)
-
+	
 		if os.path.isfile('output.inp'): self.importinp('output.inp')
 		else:
 			print "--> No 3DNA input file to import, stopping"
 			sys.exit(0)
-
+		
 		clean = ['output.inp','col_helices.scr','hel_regions.pdb','col_chains.scr','bp_order.dat','bestpairs.pdb','ref_frames.dat']
-
+		
 		for files in clean:
 			if os.path.isfile(files): os.remove(files)
-
+	
 	def importinp(self,inpfile):
-
+		
 		readfile = file(inpfile,'r')
 		lines = readfile.readlines()
 		for line in lines:
@@ -369,19 +369,19 @@ class NArestraints:
 				self.resid1.append(line[32:35])
 				self.resid2.append(line[44:47])
 				self.resnr2.append(int(line[49:53].strip('.')))
-				self.segid2.append(line[55])
-
+				self.segid2.append(line[55])	
+		
 		self.paramdict['pairs'] = []
 		for n in range(len(self.segid1)):
 			self.paramdict['pairs'].append((self.segid1[n],self.resid1[n],self.resnr1[n],self.segid2[n],self.resid2[n],self.resnr2[n]))
-
+	
 		self.getzones()
-
+		
 	def writedef(self):
-
+	
 		if self.paramdict['verbose']: outfile = sys.stdout
 		else: outfile = file('dna-rna_restraints.def', 'w')
-
+			
 		self.header(outfile)
 		self.bpplanarity(outfile)
 		self.baseplanarity(outfile)
@@ -390,22 +390,22 @@ class NArestraints:
 		self.c1c1restraint(outfile)
 		self.wcpairing(outfile)
 		self.footer(outfile)
-
-		if not self.paramdict['verbose']: outfile.close()
-
+		
+		if not self.paramdict['verbose']: outfile.close()	
+	
 	def bpplanarity(self,outfile):
-
+	
 		outfile.write("{=========================================== base-pair planarity ===========================================}\n")
 		outfile.write("{* Use planarity restraints for Watson-Crick base pairing *}\n")
 		outfile.write("{+ choice: true false +}\n\n")
-
+		
 		outfile.write("{===>} basepair_planar=%s;\n\n" % string.lower(str(self.paramdict['bpplan'])))
-
-	def baseplanarity(self, outfile):
-
+		
+	def baseplanarity(self, outfile):	
+		
 		outfile.write ("{============================================== base planarity =============================================}\n\n")
 		outfile.write ("{* Restrain base planarity. This selection must only include nucleotide residues *}\n\n")
-
+		
 		zone = ""
 		for segid in self.seglib:
 			resids = ""
@@ -418,67 +418,67 @@ class NArestraints:
 				zone = "("+resids+") and segid "+segid
 			else:
 				zone = zone+" or ("+resids+") and segid "+segid
-
-		if self.paramdict['bplan'] == True:
-			outfile.write ("{===>} bases_planar=(%s);\n\n" % zone)
+		
+		if self.paramdict['bplan'] == True:	
+			outfile.write ("{===>} bases_planar=(%s);\n\n" % zone)	
 		else:
 			outfile.write ("{* Base planarity not restraint *}\n\n")
-
+		
 	def pucker(self,outfile):
-
+	
 		outfile.write("{=================================== sugar-pucker dihedral angle restraints ================================}\n\n")
 
 		outfile.write("{* Pick the dihedral angles of the sugar pucker from the input structure\n")
 		outfile.write("   and restrain them within the given error range *}\n")
 		outfile.write("{+ choice: true false +}\n\n")
-
+		
 		if self.paramdict['pickpuck']:
 			outfile.write("{===>} dna_pick_pucdih=true;\n")
-
+	
 			pucker = []
 			for segid in self.seglib:
 				for n in self.seglib[segid]:
 					zone = "resid "+str(n[0])+":"+str(n[-1])+" and segid "+segid
 					pucker.append(zone)
-
+	    	
 			puckercount = 1
 			for pucker_group in pucker:
-
+			
 				outfile.write("{* residues with sugar pucker restrained - group %i *}\n" % puckercount)
 				outfile.write("{===>} pucker_%i=(%s);\n\n" % (puckercount,pucker_group))
-
+			
 				outfile.write("{* conformation of group %i *}\n" % puckercount)
 				outfile.write('{+ choice: "a-form" "b-form" "other" +}\n')
 				outfile.write('{===>} pform_%i="other";\n\n' % puckercount)
 
 				outfile.write("{* user defined sugar pucker for group %i *}\n" % puckercount)
-
+			
 				outfile.write("{* dihedral C1'-C2'-C3'-C4' *}\n")
-				outfile.write("{===>} dihedral_nu2_%i=-34.9;\n" % puckercount)
+				outfile.write("{===>} dihedral_nu2_%i=-34.9;\n" % puckercount) 
 				outfile.write("{* dihedral C1'-C2'-C3'-C4' error range *}\n")
 				outfile.write("{===>} error_nu2_%i=0.0;\n" % puckercount)
 				outfile.write("{* dihedral C5'-C4'-C3'-C2' *}\n")
-				outfile.write("{===>} dihedral_nu3_%i=-86.4;\n" % puckercount)
+				outfile.write("{===>} dihedral_nu3_%i=-86.4;\n" % puckercount) 
 				outfile.write("{* dihedral C5'-C4'-C3'-C2' error range *}\n")
 				outfile.write("{===>} error_nu3_%i=0.0;\n" % puckercount)
 				outfile.write("{* dihedral C1'-O4'-C4'-C5' *}\n")
-				outfile.write("{===>} dihedral_nu4_%i=106.4;\n" % puckercount)
+				outfile.write("{===>} dihedral_nu4_%i=106.4;\n" % puckercount) 
 				outfile.write("{* dihedral C1'-O4'-C4'-C5' error range *}\n")
 				outfile.write("{===>} error_nu4_%i=0.0;\n\n" % puckercount)
-
+	
 				puckercount += 1
 		else:
 			outfile.write("{===>} dna_pick_pucdih=false;\n")
-
+			
 			for puck in [1,2,3]:
 				if self.paramdict['puck_%i_start' % puck] and self.paramdict['puck_%i_end' % puck]:
 					outfile.write("{* residues with sugar pucker restrained - group %i *}\n" % puck)
-
+					
 					segid = None
 					for n in self.seglib:
 						if self.paramdict['puck_%i_start' % puck] in self.seglib[n][0] and self.paramdict['puck_%i_end' % puck] in self.seglib[n][0]: segid = n
-
-					outfile.write("{===>} pucker_%i=(resid %i:%i and segid %s);\n\n" %
+					
+					outfile.write("{===>} pucker_%i=(resid %i:%i and segid %s);\n\n" % 
 					             (puck,int(self.paramdict['puck_%i_start' % puck]),int(self.paramdict['puck_%i_end' % puck]), segid))
 
 					outfile.write("{* conformation of group %i *}\n" % puck)
@@ -488,73 +488,73 @@ class NArestraints:
 					outfile.write("{* user defined sugar pucker for group %i *}\n" % puck)
 
 					outfile.write("{* dihedral C1'-C2'-C3'-C4' *}\n")
-					outfile.write("{===>} dihedral_nu2_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu2' % puck]))
+					outfile.write("{===>} dihedral_nu2_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu2' % puck])) 
 					outfile.write("{* dihedral C1'-C2'-C3'-C4' error range *}\n")
-					outfile.write("{===>} error_nu2_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu2err' % puck]))
+					outfile.write("{===>} error_nu2_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu2err' % puck])) 
 					outfile.write("{* dihedral C5'-C4'-C3'-C2' *}\n")
-					outfile.write("{===>} dihedral_nu3_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu3' % puck]))
+					outfile.write("{===>} dihedral_nu3_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu3' % puck])) 
 					outfile.write("{* dihedral C5'-C4'-C3'-C2' error range *}\n")
-					outfile.write("{===>} error_nu3_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu3err' % puck]))
+					outfile.write("{===>} error_nu3_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu3err' % puck])) 
 					outfile.write("{* dihedral C1'-O4'-C4'-C5' *}\n")
-					outfile.write("{===>} dihedral_nu4_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu4' % puck]))
+					outfile.write("{===>} dihedral_nu4_%i=%s;\n" % (puck,self.paramdict['puck_%i_nu4' % puck])) 
 					outfile.write("{* dihedral C1'-O4'-C4'-C5' error range *}\n")
-					outfile.write("{===>} error_nu4_%i=%s;\n\n" % (puck,self.paramdict['puck_%i_nu4err' % puck]))
-
+					outfile.write("{===>} error_nu4_%i=%s;\n\n" % (puck,self.paramdict['puck_%i_nu4err' % puck])) 
+	
 	def sfbackbone(self,outfile):
-
+		
 		outfile.write("{================================ phosphate backbone dihedral angle restraints =============================}\n\n")
-
+		
 		outfile.write("{* Pick the dihedral angles of the phosphate backbone from the input structure and\n")
 		outfile.write("   restrain them within the given error range *}\n")
 		outfile.write("{+ choice: true false +}\n\n")
-
-		if self.paramdict['pickbackdih']:
-
+		
+		if self.paramdict['pickbackdih']: 
+	
 			outfile.write("{===>} dna_pick_bacdih=true;\n\n")
-
+		
 			bacdih = []
 			for segid in self.seglib:
 				for n in self.seglib[segid]:
 					zone = "resid "+str(n[0])+":"+str(n[-1])+" and segid "+segid
 					bacdih.append(zone)
-
+		
 			bacdihcount = 1
 			for bacdih_group in bacdih:
-
+			
 				outfile.write("{* residues with phosphate backbone restrained - group %i *}\n" % bacdihcount)
 				outfile.write("{===>} dihedral_%i=(%s);\n\n" % (bacdihcount,bacdih_group))
-
+			
 				outfile.write("{* conformation of group %i *}\n" % bacdihcount)
 				outfile.write('{+ choice: "a-form" "b-form" "other" +}\n')
 				outfile.write('{===>} dform_%i="other";\n\n' % bacdihcount)
 
 				outfile.write("{* user defined posphate backbone for group %i *}\n" % bacdihcount)
-
+			
 				outfile.write("{* alpha dihedral O3'-P-O5'-C5' *}\n")
-				outfile.write("{===>} dihedral_alpha_%i=-10.0;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_alpha_%i=-10.0;\n" % bacdihcount) 
 				outfile.write("{* alpha dihedral range *}\n")
-				outfile.write("{===>} error_alpha_%i=10.0;\n" % bacdihcount)
+				outfile.write("{===>} error_alpha_%i=10.0;\n" % bacdihcount) 
 				outfile.write("{* beta dihedral P-O5'-C5'-C4' *}\n")
-				outfile.write("{===>} dihedral_beta_%i=136.4;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_beta_%i=136.4;\n" % bacdihcount) 
 				outfile.write("{* beta dihedral range *}\n")
-				outfile.write("{===>} error_beta_%i=40.0;\n" % bacdihcount)
+				outfile.write("{===>} error_beta_%i=40.0;\n" % bacdihcount) 
 				outfile.write("{* gamma dihedral O5'-C5'-C4'-C3' *}\n")
-				outfile.write("{===>} dihedral_gamma_%i=31.1;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_gamma_%i=31.1;\n" % bacdihcount) 
 				outfile.write("{* gamma dihedral range *}\n")
-				outfile.write("{===>} error_gamma_%i=20.0;\n" % bacdihcount)
+				outfile.write("{===>} error_gamma_%i=20.0;\n" % bacdihcount) 
 				outfile.write("{* delta dihedral C5'-C4'-C3'-O3' *}\n")
-				outfile.write("{===>} dihedral_delta_%i=-165.0;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_delta_%i=-165.0;\n" % bacdihcount) 
 				outfile.write("{* delta dihedral range *}\n")
-				outfile.write("{===>} error_delta_%i=50.0;\n" % bacdihcount)
+				outfile.write("{===>} error_delta_%i=50.0;\n" % bacdihcount) 
 				outfile.write("{* epsilon dihedral C4'-C3'-O3'-P *}\n")
-				outfile.write("{===>} dihedral_eps_%i=-165.0;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_eps_%i=-165.0;\n" % bacdihcount) 
 				outfile.write("{* epsilon dihedral range *}\n")
-				outfile.write("{===>} error_eps_%i=10.0;\n" % bacdihcount)
+				outfile.write("{===>} error_eps_%i=10.0;\n" % bacdihcount) 
 				outfile.write("{* zeta dihedral C3'-O3'-P-O5' *}\n")
-				outfile.write("{===>} dihedral_zeta_%i=-150.8;\n" % bacdihcount)
+				outfile.write("{===>} dihedral_zeta_%i=-150.8;\n" % bacdihcount) 
 				outfile.write("{* zeta dihedral range *}\n")
 				outfile.write("{===>} error_zeta_%i=50.0;\n\n" % bacdihcount)
-
+		
 				bacdihcount += 1
 		else:
 			outfile.write("{===>} dna_pick_bacdih=false;\n\n")
@@ -567,9 +567,9 @@ class NArestraints:
 					for n in self.seglib:
 						if self.paramdict['dih_%i_start' % dih] in self.seglib[n][0] and self.paramdict['dih_%i_end' % dih] in self.seglib[n][0]: segid = n
 
-					outfile.write("{===>} dihedral_%i=(resid %i:%i and segid %s);\n\n" %
+					outfile.write("{===>} dihedral_%i=(resid %i:%i and segid %s);\n\n" % 
 					             (dih,int(self.paramdict['dih_%i_start' % dih]),int(self.paramdict['dih_%i_end' % dih]), segid))
-
+					
 					outfile.write("{* conformation of group %i *}\n" % dih)
 					outfile.write('{+ choice: "a-form" "b-form" "other" +}\n')
 					outfile.write('{===>} dform_%i="%s";\n\n' % (dih,self.paramdict['dform_%i' % dih]))
@@ -577,49 +577,49 @@ class NArestraints:
 					outfile.write("{* user defined posphate backbone for group %i *}\n" % dih)
 
 					outfile.write("{* alpha dihedral O3'-P-O5'-C5' *}\n")
-					outfile.write("{===>} dihedral_alpha_%i=%s;\n" % (dih,self.paramdict['dih_%i_alpha' % dih]))
+					outfile.write("{===>} dihedral_alpha_%i=%s;\n" % (dih,self.paramdict['dih_%i_alpha' % dih])) 
 					outfile.write("{* alpha dihedral range *}\n")
 					outfile.write("{===>} error_alpha_%i=%s;\n" % (dih,self.paramdict['dih_%i_alphaerr' % dih]))
 					outfile.write("{* beta dihedral P-O5'-C5'-C4' *}\n")
-					outfile.write("{===>} dihedral_beta_%i=%s;\n" % (dih,self.paramdict['dih_%i_beta' % dih]))
+					outfile.write("{===>} dihedral_beta_%i=%s;\n" % (dih,self.paramdict['dih_%i_beta' % dih])) 
 					outfile.write("{* beta dihedral range *}\n")
-					outfile.write("{===>} error_beta_%i=%s;\n" % (dih,self.paramdict['dih_%i_betaerr' % dih]))
+					outfile.write("{===>} error_beta_%i=%s;\n" % (dih,self.paramdict['dih_%i_betaerr' % dih])) 
 					outfile.write("{* gamma dihedral O5'-C5'-C4'-C3' *}\n")
-					outfile.write("{===>} dihedral_gamma_%i=%s;\n" % (dih,self.paramdict['dih_%i_gamma' % dih]))
+					outfile.write("{===>} dihedral_gamma_%i=%s;\n" % (dih,self.paramdict['dih_%i_gamma' % dih])) 
 					outfile.write("{* gamma dihedral range *}\n")
-					outfile.write("{===>} error_gamma_%i=%s;\n" % (dih,self.paramdict['dih_%i_gammaerr' % dih]))
+					outfile.write("{===>} error_gamma_%i=%s;\n" % (dih,self.paramdict['dih_%i_gammaerr' % dih])) 
 					outfile.write("{* delta dihedral C5'-C4'-C3'-O3' *}\n")
-					outfile.write("{===>} dihedral_delta_%i=%s;\n" % (dih,self.paramdict['dih_%i_delta' % dih]))
+					outfile.write("{===>} dihedral_delta_%i=%s;\n" % (dih,self.paramdict['dih_%i_delta' % dih])) 
 					outfile.write("{* delta dihedral range *}\n")
-					outfile.write("{===>} error_delta_%i=%s;\n" % (dih,self.paramdict['dih_%i_deltaerr' % dih]))
+					outfile.write("{===>} error_delta_%i=%s;\n" % (dih,self.paramdict['dih_%i_deltaerr' % dih])) 
 					outfile.write("{* epsilon dihedral C4'-C3'-O3'-P *}\n")
-					outfile.write("{===>} dihedral_eps_%i=%s;\n" % (dih,self.paramdict['dih_%i_eps' % dih]))
+					outfile.write("{===>} dihedral_eps_%i=%s;\n" % (dih,self.paramdict['dih_%i_eps' % dih])) 
 					outfile.write("{* epsilon dihedral range *}\n")
-					outfile.write("{===>} error_eps_%i=%s;\n" % (dih,self.paramdict['dih_%i_epserr' % dih]))
+					outfile.write("{===>} error_eps_%i=%s;\n" % (dih,self.paramdict['dih_%i_epserr' % dih])) 
 					outfile.write("{* zeta dihedral C3'-O3'-P-O5' *}\n")
-					outfile.write("{===>} dihedral_zeta_%i=%s;\n" % (dih,self.paramdict['dih_%i_zeta' % dih]))
+					outfile.write("{===>} dihedral_zeta_%i=%s;\n" % (dih,self.paramdict['dih_%i_zeta' % dih])) 
 					outfile.write("{* zeta dihedral range *}\n")
 					outfile.write("{===>} error_zeta_%i=%s;\n\n" % (dih,self.paramdict['dih_%i_zetaerr' % dih]))
-
+				
 	def c1c1restraint(self,outfile):
-
+		
 		outfile.write("{============================================= C1'-C1' restraints ==========================================}\n\n")
 		outfile.write("{* Have the length of the C1'-C1' virtual bonds measured and restraints. *}\n")
 		outfile.write("{+ choice: true false +}\n")
-
+		
 		outfile.write("{===>} dna_pick_c1=%s;\n\n" % string.lower(str(self.paramdict['c1pick'])))
-
+		
 		outfile.write("{* Error range used for C1'-C1' virtual bonds  *}\n")
 		outfile.write("{===>} c1_low=%1.3f;\n" % self.paramdict['c1lower'])
-		outfile.write("{===>} c1_up=%1.3f;\n\n" % self.paramdict['c1upper'])
-
+		outfile.write("{===>} c1_up=%1.3f;\n\n" % self.paramdict['c1upper'])	
+	
 	def wcpairing(self,outfile):
-
+		
 		outfile.write("{=========================================== Watson-Crick base pairs =======================================}\n\n")
 
 		outfile.write("{* pick Watson-Crick restraint values from structure *}\n")
 		outfile.write("{+ choice: true false +}\n")
-
+		
 		outfile.write("{===>} dna_pick_wc=%s;\n" % string.lower(str(self.paramdict['pickwc'])))
 		outfile.write("{* error range used for dna_pick_wc defined Watson-Crick restraints *}\n")
 		outfile.write("{===>} wc_low=%1.3f;\n" % self.paramdict['wc_low'])
@@ -632,16 +632,16 @@ class NArestraints:
 
 		paircount = 1
 		for basepair in self.paramdict['pairs']:
-
+			
 			outfile.write("{* selection for pair %i base A *}\n" % paircount)
 			outfile.write("{===>} base_a_%i=(resid %i and segid %s);\n" % (paircount,basepair[2],basepair[0]))
 			outfile.write("{* selection for pair %i base B *}\n" % paircount)
 			outfile.write("{===>} base_b_%i=(resid %i and segid %s);\n\n" % (paircount,basepair[5],basepair[3]))
-
+		
 			paircount += 1
-
+		
 	def header(self,outfile):
-
+		
 		outfile.write("""{+ file: dna-rna_restraints.def       directory: protocols +}
 {+ description: Creates restraints to maintain conformation of DNA/RNA +}
 {+ comment:This file is to be read by refinement files that modify atom coordinates +}
@@ -662,9 +662,9 @@ Changes include: <br>
 set message=normal echo=on end
 
 {- begin block parameter definition -} define(\n\n""")
-
+		
 	def footer(self,outfile):
-
+		
 		outfile.write("""{=========================================================================================================}
 {                        things below this line do not normally need to be changed                        }
 {=========================================================================================================}
@@ -1473,7 +1473,7 @@ flags include noe end
  end if
  flags include noe end
 
-set message=off echo=off end""")
+set message=off echo=off end""")		
 
 if __name__ == '__main__':
 
@@ -1491,4 +1491,4 @@ if __name__ == '__main__':
 
 	"""Envoce main functions"""
 	PluginCore(paramdict, metadict, inputlist=paramdict['input'])
-	sys.exit(0)
+	sys.exit(0)		
