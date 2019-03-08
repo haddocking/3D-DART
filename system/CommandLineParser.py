@@ -3,23 +3,23 @@
 USAGE = """
 ==========================================================================================
 
-Author:				Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
-					for Biomolecular Research, Utrecht university, The Netherlands
-Copyright (C):		2006 (DART project)
-DART version:		1.2  (25-11-2008)
-DART module:		CommandLineParser.py
-Input:				The DART framework excecutes predefined workflows composed of DART 
-					plugins with certain settings (option -w/--workflow). The workflows 
-					can be generated using the -d/--dry option. Edit the plugin 
-					parameters in the workflow XML file afterwards. By placing the 
-					workflow file in the workflow directory of the DART package you can 
-					always excecute this workflow from the commandline (it functions 
-					as a sort of script repository). 
-Output:				Output of every plugin defined in the workflow is placed in a sepperate
- 					subdirectory of a parent workflow directory
-Examples:			dart -dp X3DNAanalyze NABendAnalyze
-					dart -w NAanalyze
-Dependencies:		Standard python2.5 modules, Numeric
+Author:             Marc van Dijk, Department of NMR spectroscopy, Bijvoet Center
+                    for Biomolecular Research, Utrecht university, The Netherlands
+Copyright (C):      2006 (DART project)
+DART version:       1.2  (25-11-2008)
+DART module:        CommandLineParser.py
+Input:              The DART framework excecutes predefined workflows composed of DART 
+                    plugins with certain settings (option -w/--workflow). The workflows 
+                    can be generated using the -d/--dry option. Edit the plugin 
+                    parameters in the workflow XML file afterwards. By placing the 
+                    workflow file in the workflow directory of the DART package you can 
+                    always excecute this workflow from the commandline (it functions 
+                    as a sort of script repository). 
+Output:             Output of every plugin defined in the workflow is placed in a sepperate
+                    subdirectory of a parent workflow directory
+Examples:           dart -dp X3DNAanalyze NABendAnalyze
+                    dart -w NAanalyze
+Dependencies:       Standard python2.5 modules, Numeric
 
 ==========================================================================================
 """

@@ -255,7 +255,10 @@ class PluginExecutor:
 	def PluginExecutor(self):
 		
 		"""Get meta data from workflow xml file"""
-		mainxml = Xpath(self.opt_dict['workflow'])
+		try:
+			mainxml = Xpath(self.opt_dict['workflow'])
+		except:
+			raise SystemExit("Wrong command line")
 		self.maindict = self._MainXMLdataHandler(mainxml)
 	
 		"""Make main workflow directory"""
