@@ -104,5 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # Specific to 3D-DART
-software/
 test/
+X3DNA-linux/
+X3DNA-mac/
