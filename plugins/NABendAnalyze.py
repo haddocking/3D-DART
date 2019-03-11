@@ -724,8 +724,12 @@ class MeasureBend:
 				residnr2.append(int(splitter2.split(tmp2[4])[0]))
 				resid1.append(splitter3.split(tmp2[2])[0])
 			 	resid2.append(splitter3.split(tmp2[3])[0])
-		#TODO Distinction between OSX and Linux version (tmp2[0][1] for OSX)	
-		self.chainid = tmp2[0][1]	#extract chainid once from .out file
+		# FIXED Distinction between OSX and Linux version (tmp2[0][1] for OSX)
+		# Extract chainid once from .out file
+		if os.uname()[0] == 'Darwin':
+			self.chainid = tmp2[0][1]
+		else:
+			self.chainid = tmp2[0][0]
 		tableout[infile] = []
 		tableout[infile].append(intnr)
 		tableout[infile].append(resid1)
