@@ -382,7 +382,7 @@ class PDBeditor:
                 line = line[:-1]
 
                 # Add TER statement if change in chainid
-                if len(self.chain) and not self.chain[-1] == line[21]:
+                if len(line) > 22 and len(self.chain) and not self.chain[-1] == line[21]:
                     self.label.append('TER   ')
                     for b in (
                     self.allatom_line, self.atnum, self.atname, self.resnum, self.resname, self.chain, self.atalt,
