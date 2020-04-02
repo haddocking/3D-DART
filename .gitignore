@@ -107,3 +107,5 @@ venv.bak/
 test/
 X3DNA-linux/
 X3DNA-mac/
+.DS_Store
+software/backup

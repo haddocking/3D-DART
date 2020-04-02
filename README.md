@@ -2,6 +2,61 @@
 
 Standalone version of 3D-DART (originally developed by [Marc van Dijk](https://github.com/marcvdijk)) for Python 2.x series.
 
+## Installation
+
+* Install [numpy](https://numpy.org/) library for Python 2.x:
+
+```
+pip install numpy
+```
+
+* Clone this repository:
+
+```bash
+git clone https://github.com/haddocking/3D-DART.git
+```
+
+* Create [X3DNA](http://x3dna.org/) software folder structure:
+
+```bash
+cd 3D-DART/software
+mkdir X3DNA-linux X3DNA-mac
+```
+
+* Download from [http://x3dna.org/](http://x3dna.org/) your specific architecture version and place it `X3DNA-linux` if GNU/Linux or `X3DNA-mac` if macOS.
+
+* Test running the main script, you should get a similar output to this:
+
+```bash
+cd /path/to/3D-DART
+./RunDART.py
+```
+
+```
+--> Performing System Checks:
+   * Python version is: 2.7.1
+   * Could not import Numeric package trying NumPy
+   * Importing NumPy package succesfull
+--> Your current working directory is: /path/to/3D-DART
+--------------------------------------------------------------------------------------------------------------
+Welcome to 3D-DART version 1.2   Thu Apr  2 12:03:14 2020
+--------------------------------------------------------------------------------------------------------------
+--> Parsing command-line arguments:
+Wrong command line
+
+```
+
+If you see the message above, then 3D-DART is ready.
+
+
+## Example
+
+```bash
+cd /path/to/3D-DART
+./RunDART.py -w NAensemblebuild -f example/struct_*.pdb
+```
+
+
 ## Output description
 
 A brief description of the directories:
