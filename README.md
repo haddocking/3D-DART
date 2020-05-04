@@ -4,6 +4,14 @@ Standalone version of 3D-DART (originally developed by [Marc van Dijk](https://g
 
 ## Installation
 
+* We recommend to use a virtual environment to install 3D-DART:
+
+```
+virtualenv --python=python2.7 dart
+cd dart
+source bin/activate
+```
+
 * Install [numpy](https://numpy.org/) library for Python 2.x:
 
 ```
@@ -23,7 +31,31 @@ cd 3D-DART/software
 mkdir X3DNA-linux X3DNA-mac
 ```
 
-* Download from [http://x3dna.org/](http://x3dna.org/) your specific architecture version and place it `X3DNA-linux` if GNU/Linux or `X3DNA-mac` if macOS.
+* Download from [http://x3dna.org/](http://x3dna.org/) your specific architecture version and place it `X3DNA-linux` if GNU/Linux or `X3DNA-mac` if macOS. For example, `X3DNA-mac` folder should contain:
+
+```
+[3D-DART/software/X3DNA-mac]$ ls
+BASEPARS FIBER    bin
+```
+
+and more in deep:
+
+```
+BASEPARS/:
+ATOMIC           Atomic_G.pdb     Atomic_U.pdb     Block_BP.alc     Pxyz.dat         RNA_BASES        col_mname.dat    misc_3dna.par    ps_image.par     trans_pep.alc
+Atomic_A.pdb     Atomic_P.pdb     Atomic_i.pdb     Block_R.alc      PxyzH.dat        baselist.dat     fig_image.par    my_header.r3d    raster3d.par     trans_pep.pdb
+Atomic_C.pdb     Atomic_T.pdb     BLOCK            Block_Y.alc      README           col_chain.dat    help3dna.dat     ndb_raster3d.par rotz90
+
+FIBER/:
+Data   Str02  Str05  Str08  Str11  Str14  Str17  Str20  Str23  Str26  Str29  Str32  Str35  Str38  Str41  Str44  Str47  Str50  Str53
+README Str03  Str06  Str09  Str12  Str15  Str18  Str21  Str24  Str27  Str30  Str33  Str36  Str39  Str42  Str45  Str48  Str51  Str54
+Str01  Str04  Str07  Str10  Str13  Str16  Str19  Str22  Str25  Str28  Str31  Str34  Str37  Str40  Str43  Str46  Str49  Str52  Str55
+
+bin/:
+EnergyPDNA.exe anyhelix       cehs           dcmnfile       fiber          get_part       nmr_ensemble   pdb2img        regular_dna    std_base
+alc2img        block_atom     comb_str       del_ms         find_pair      manalyze       nmr_strs       r3d_atom       rotate_mol     step_hel
+analyze        blocview       cp_std         ex_str         frame_mol      mstack2img     o1p_o2p        rebuild        stack2img
+```
 
 * Test running the main script, you should get a similar output to this:
 
